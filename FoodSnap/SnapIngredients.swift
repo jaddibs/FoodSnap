@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  SnapIngredients.swift
 //  FoodSnap
 //
 //  Created by Jad Dibs on 5/4/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 import UIKit
 
-struct ContentView: View {
+struct SnapIngredients: View {
     @State private var selectedImage: UIImage?
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
@@ -163,5 +163,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
-}
+    SnapIngredients()
+} 

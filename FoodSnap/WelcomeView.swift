@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WelcomeView: View {
-    @State private var navigateToContentView = false
+    @State private var navigateToSnapIngredients = false
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
     
@@ -64,9 +64,9 @@ struct WelcomeView: View {
                     Spacer()
                     
                     // Get Started Button
-                    NavigationLink(destination: ContentView(), isActive: $navigateToContentView) {
+                    NavigationLink(destination: SnapIngredients(), isActive: $navigateToSnapIngredients) {
                         Button(action: {
-                            navigateToContentView = true
+                            navigateToSnapIngredients = true
                         }) {
                             HStack {
                                 Image(systemName: "camera")
