@@ -40,7 +40,7 @@ struct WelcomeView: View {
                             icon: "camera.fill",
                             iconColor: Theme.Colors.primary,
                             title: "Snap Ingredients",
-                            description: "Take a photo of your ingredients using your camera"
+                            description: "Take or upload a photo of your ingredients"
                         )
                         
                         // Step 2

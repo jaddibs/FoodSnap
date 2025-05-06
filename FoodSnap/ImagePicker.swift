@@ -69,7 +69,7 @@ struct ImagePicker: View {
                                 .fill(Theme.Colors.accent)
                         )
                     
-                    Text("Gallery")
+                    Text("Upload Photo")
                         .font(Theme.Typography.callout.weight(.medium))
                         .foregroundColor(Theme.Colors.text)
                 }
