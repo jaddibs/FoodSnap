@@ -34,7 +34,7 @@ struct FoodSnapApp: App {
                 if isLoading {
                     SplashScreenView()
                 } else {
-                    ContentView()
+                    WelcomeView()
                 }
             }
             .preferredColorScheme(isDarkMode ? .dark : .light)
