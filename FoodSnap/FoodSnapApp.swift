@@ -20,6 +20,8 @@ struct FoodSnapApp: App {
     // Add the app delegate to handle Info.plist requirements
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
+    @Environment(\.colorScheme) var colorScheme
+    
     init() {
         setupApp()
     }
@@ -27,6 +29,7 @@ struct FoodSnapApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.none) // Allow system to control dark/light mode
         }
     }
     
@@ -36,10 +39,24 @@ struct FoodSnapApp: App {
         
         // Set app-wide UI appearance
         if #available(iOS 15.0, *) {
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            UINavigationBar.appearance().standardAppearance = appearance
-            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            // Navigation bar appearance
+            let navAppearance = UINavigationBarAppearance()
+            navAppearance.configureWithOpaqueBackground()
+            navAppearance.backgroundColor = UIColor(Theme.Colors.background)
+            navAppearance.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.text)]
+            navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.text)]
+            
+            UINavigationBar.appearance().standardAppearance = navAppearance
+            UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+            UINavigationBar.appearance().compactAppearance = navAppearance
+            
+            // Tab bar appearance
+            let tabAppearance = UITabBarAppearance()
+            tabAppearance.configureWithOpaqueBackground()
+            tabAppearance.backgroundColor = UIColor(Theme.Colors.background)
+            
+            UITabBar.appearance().standardAppearance = tabAppearance
+            UITabBar.appearance().scrollEdgeAppearance = tabAppearance
         }
     }
 }

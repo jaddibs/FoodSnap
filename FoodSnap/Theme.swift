@@ -22,12 +22,28 @@ struct Theme {
         static let softWhite = Color("SoftWhite") // #F0F0F0
         
         // Current theme - can be switched based on preference
-        static var primary: Color { primaryGreen }
-        static var secondary: Color { secondaryGreen }
-        static var accent: Color { accentTerracotta }
-        static var background: Color { backgroundCream }
-        static var text: Color { Color.black.opacity(0.85) }
-        static var secondaryText: Color { Color.black.opacity(0.6) }
+        static let primary = primaryGreen
+        static let secondary = secondaryGreen
+        static let accent = accentTerracotta
+        
+        // Dynamic colors that adapt to color scheme
+        static var background: Color {
+            Color(UIColor { traits in
+                traits.userInterfaceStyle == .dark ? UIColor(darkBackground) : UIColor(backgroundCream)
+            })
+        }
+        
+        static var text: Color {
+            Color(UIColor { traits in
+                traits.userInterfaceStyle == .dark ? UIColor(softWhite) : UIColor(Color.black.opacity(0.85))
+            })
+        }
+        
+        static var secondaryText: Color {
+            Color(UIColor { traits in
+                traits.userInterfaceStyle == .dark ? UIColor(softWhite.opacity(0.7)) : UIColor(Color.black.opacity(0.6))
+            })
+        }
     }
     
     // MARK: - Typography
@@ -65,6 +81,8 @@ struct Theme {
 
 // MARK: - Custom Button Styles
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) var colorScheme
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.Typography.title3)
@@ -82,6 +100,8 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) var colorScheme
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(Theme.Typography.title3)
@@ -93,7 +113,7 @@ struct SecondaryButtonStyle: ButtonStyle {
                     .stroke(Theme.Colors.primary, lineWidth: 2)
                     .background(
                         RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                            .fill(Color.white)
+                            .fill(colorScheme == .dark ? Color.black.opacity(0.3) : Color.white)
                     )
             )
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
@@ -103,13 +123,15 @@ struct SecondaryButtonStyle: ButtonStyle {
 
 // MARK: - Custom Modifiers
 struct CardModifier: ViewModifier {
+    @Environment(\.colorScheme) var colorScheme
+    
     func body(content: Content) -> some View {
         content
             .padding(Theme.Dimensions.horizontalPadding)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
-                    .fill(Color.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    .fill(colorScheme == .dark ? Color.black.opacity(0.3) : Color.white)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 8, x: 0, y: 2)
             )
             .padding(.horizontal, Theme.Dimensions.horizontalPadding)
             .padding(.vertical, Theme.Dimensions.verticalPadding)

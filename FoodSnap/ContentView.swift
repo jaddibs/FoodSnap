@@ -10,6 +10,7 @@ import UIKit
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -41,7 +42,7 @@ struct ContentView: View {
         .onAppear {
             // Set the tab bar appearance
             let appearance = UITabBarAppearance()
-            appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+            appearance.backgroundEffect = UIBlurEffect(style: colorScheme == .dark ? .systemMaterialDark : .systemUltraThinMaterial)
             appearance.backgroundColor = UIColor(Theme.Colors.background.opacity(0.9))
             
             // Set the tab bar item colors

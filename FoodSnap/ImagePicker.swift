@@ -44,6 +44,7 @@ struct ImagePicker: View {
                     
                     Text("Take Photo")
                         .font(Theme.Typography.callout.weight(.medium))
+                        .foregroundColor(Theme.Colors.text)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -70,6 +71,7 @@ struct ImagePicker: View {
                     
                     Text("Gallery")
                         .font(Theme.Typography.callout.weight(.medium))
+                        .foregroundColor(Theme.Colors.text)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
