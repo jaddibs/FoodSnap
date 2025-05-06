@@ -54,10 +54,12 @@ struct ImagePicker: View {
             .padding()
         }
         .sheet(isPresented: $showCamera) {
-            CameraView(selectedImage: $selectedImage, onError: { error in
-                cameraError = error
-                showCamera = false
-            })
+            EnhancedCameraView(selectedImage: $selectedImage)
+                .ignoresSafeArea()
+                .onDisappear {
+                    // Reset camera error on dismiss if needed
+                    cameraError = nil
+                }
         }
         .alert("Permission Required", isPresented: $showPermissionAlert) {
             Button("OK", role: .cancel) { }
@@ -119,56 +121,88 @@ struct ImagePicker: View {
     }
 }
 
-struct CameraView: UIViewControllerRepresentable {
+// Enhanced camera view that properly sets up the camera session
+struct EnhancedCameraView: View {
     @Binding var selectedImage: UIImage?
     @Environment(\.presentationMode) var presentationMode
+    @State private var showingAlert = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        ZStack {
+            // Use UIKit-based camera view controller
+            CameraViewControllerRepresentable(selectedImage: $selectedImage, onComplete: {
+                presentationMode.wrappedValue.dismiss()
+            }, onError: { error in
+                errorMessage = error
+                showingAlert = true
+            })
+            .ignoresSafeArea()
+            
+            // Camera controls overlay could be added here if needed
+        }
+        .alert("Camera Error", isPresented: $showingAlert) {
+            Button("OK", role: .cancel) {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text(errorMessage)
+        }
+    }
+}
+
+// UIKit-based camera view controller with proper camera configuration
+struct CameraViewControllerRepresentable: UIViewControllerRepresentable {
+    @Binding var selectedImage: UIImage?
+    var onComplete: () -> Void
     var onError: (String) -> Void
     
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
         
-        // Add safety check - this should prevent crashes if camera is not available
+        // Ensure camera is available and properly configured
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             picker.sourceType = .camera
+            picker.cameraCaptureMode = .photo
+            picker.cameraDevice = .rear  // Default to rear camera
+            picker.allowsEditing = false // No editing after capture for simplicity
+            picker.showsCameraControls = true // Show default camera controls
         } else {
             DispatchQueue.main.async {
                 onError("Camera is not available on this device")
-                presentationMode.wrappedValue.dismiss()
             }
         }
         
         return picker
     }
     
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {
+        // Nothing to update here
+    }
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
     class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraView
+        let parent: CameraViewControllerRepresentable
         
-        init(_ parent: CameraView) {
+        init(_ parent: CameraViewControllerRepresentable) {
             self.parent = parent
         }
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
                 parent.selectedImage = image
+                parent.onComplete()
+            } else {
+                parent.onError("Failed to capture image")
             }
-            parent.presentationMode.wrappedValue.dismiss()
         }
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.presentationMode.wrappedValue.dismiss()
-        }
-        
-        // Add error handling for the image picker controller
-        func imagePickerControllerDidFail(_ picker: UIImagePickerController, didFailWithError error: Error) {
-            parent.onError("Camera error: \(error.localizedDescription)")
-            parent.presentationMode.wrappedValue.dismiss()
+            parent.onComplete()
         }
     }
 } 
