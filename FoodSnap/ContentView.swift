@@ -9,60 +9,6 @@ import SwiftUI
 import UIKit
 
 struct ContentView: View {
-    @State private var selectedTab = 0
-    @Environment(\.colorScheme) var colorScheme
-    
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "camera.fill")
-                }
-                .tag(0)
-            
-            SavedRecipesView()
-                .tabItem {
-                    Label("Saved", systemImage: "bookmark.fill")
-                }
-                .tag(1)
-            
-            ExploreView()
-                .tabItem {
-                    Label("Explore", systemImage: "fork.knife")
-                }
-                .tag(2)
-            
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
-                .tag(3)
-        }
-        .accentColor(Theme.Colors.accent)
-        .onAppear {
-            // Set the tab bar appearance
-            let appearance = UITabBarAppearance()
-            appearance.backgroundEffect = UIBlurEffect(style: colorScheme == .dark ? .systemMaterialDark : .systemUltraThinMaterial)
-            appearance.backgroundColor = UIColor(Theme.Colors.background.opacity(0.9))
-            
-            // Set the tab bar item colors
-            let itemAppearance = UITabBarItemAppearance()
-            itemAppearance.normal.iconColor = UIColor(Theme.Colors.secondaryText)
-            itemAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.secondaryText)]
-            itemAppearance.selected.iconColor = UIColor(Theme.Colors.accent)
-            itemAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.accent)]
-            
-            appearance.stackedLayoutAppearance = itemAppearance
-            appearance.inlineLayoutAppearance = itemAppearance
-            appearance.compactInlineLayoutAppearance = itemAppearance
-            
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
-        }
-    }
-}
-
-struct HomeView: View {
     @State private var selectedImage: UIImage?
     @Environment(\.colorScheme) var colorScheme
     
@@ -73,18 +19,6 @@ struct HomeView: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: Theme.Dimensions.largeSpacing) {
-                    // App Header
-                    VStack(spacing: 4) {
-                        Text("FoodSnap")
-                            .font(Theme.Typography.largeTitle)
-                            .foregroundColor(Theme.Colors.text)
-                        
-                        Text("Snap, Identify, Cook")
-                            .font(Theme.Typography.subheadline)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                    }
-                    .padding(.top)
-                    
                     // Main content area
                     ScrollView {
                         VStack(spacing: Theme.Dimensions.largeSpacing) {
@@ -157,113 +91,24 @@ struct HomeView: View {
                 }
                 .padding(.bottom)
             }
-            .navigationBarHidden(true)
-        }
-    }
-}
-
-// Placeholder Views for other tabs
-struct SavedRecipesView: View {
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Theme.Colors.background
-                    .ignoresSafeArea()
-                
-                VStack {
-                    Text("Saved Recipes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text("FoodSnap")
                         .font(Theme.Typography.title)
-                        .padding(.top)
-                    
-                    Spacer()
-                    
-                    // Placeholder content
-                    VStack(spacing: 20) {
-                        Image(systemName: "bookmark.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(Theme.Colors.primary)
-                        
-                        Text("Your saved recipes will appear here")
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding()
+                        .foregroundColor(Theme.Colors.text)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        // Settings button action (does nothing for now)
+                    }) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(Theme.Colors.accent)
                     }
-                    
-                    Spacer()
                 }
             }
-            .navigationBarHidden(true)
-        }
-    }
-}
-
-struct ExploreView: View {
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Theme.Colors.background
-                    .ignoresSafeArea()
-                
-                VStack {
-                    Text("Explore")
-                        .font(Theme.Typography.title)
-                        .padding(.top)
-                    
-                    Spacer()
-                    
-                    // Placeholder content
-                    VStack(spacing: 20) {
-                        Image(systemName: "fork.knife.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(Theme.Colors.primary)
-                        
-                        Text("Discover curated recipes and ideas")
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                    }
-                    
-                    Spacer()
-                }
-            }
-            .navigationBarHidden(true)
-        }
-    }
-}
-
-struct ProfileView: View {
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Theme.Colors.background
-                    .ignoresSafeArea()
-                
-                VStack {
-                    Text("Profile")
-                        .font(Theme.Typography.title)
-                        .padding(.top)
-                    
-                    Spacer()
-                    
-                    // Placeholder content
-                    VStack(spacing: 20) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(Theme.Colors.primary)
-                        
-                        Text("Manage your preferences and settings")
-                            .font(Theme.Typography.body)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding()
-                    }
-                    
-                    Spacer()
-                }
-            }
-            .navigationBarHidden(true)
         }
     }
 }
