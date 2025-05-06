@@ -25,33 +25,63 @@ struct ImagePicker: View {
     @State private var permissionMessage = ""
     @State private var photoItem: PhotosPickerItem?
     @State private var cameraError: String? = nil
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack {
-            if let image = selectedImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 300)
-                    .cornerRadius(12)
+        HStack(spacing: Theme.Dimensions.largeSpacing) {
+            Button(action: {
+                checkCameraPermission()
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(
+                            Circle()
+                                .fill(Theme.Colors.primary)
+                        )
+                    
+                    Text("Take Photo")
+                        .font(Theme.Typography.callout.weight(.medium))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                        .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                        .stroke(Theme.Colors.primary.opacity(0.5), lineWidth: 1)
+                )
             }
             
-            HStack(spacing: 20) {
-                Button(action: {
-                    checkCameraPermission()
-                }) {
-                    Label("Take Photo", systemImage: "camera")
-                        .frame(maxWidth: .infinity)
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                VStack(spacing: 8) {
+                    Image(systemName: "photo.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(
+                            Circle()
+                                .fill(Theme.Colors.accent)
+                        )
+                    
+                    Text("Gallery")
+                        .font(Theme.Typography.callout.weight(.medium))
                 }
-                .buttonStyle(.borderedProminent)
-                
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Choose Photo", systemImage: "photo.on.rectangle")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                        .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                        .stroke(Theme.Colors.accent.opacity(0.5), lineWidth: 1)
+                )
             }
-            .padding()
         }
         .sheet(isPresented: $showCamera) {
             EnhancedCameraView(selectedImage: $selectedImage)
@@ -62,12 +92,13 @@ struct ImagePicker: View {
                 }
         }
         .alert("Permission Required", isPresented: $showPermissionAlert) {
-            Button("OK", role: .cancel) { }
+            Button("Cancel", role: .cancel) { }
             Button("Settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             }
+            .buttonStyle(.borderedProminent)
         } message: {
             Text(permissionMessage)
         }
@@ -139,7 +170,28 @@ struct EnhancedCameraView: View {
             })
             .ignoresSafeArea()
             
-            // Camera controls overlay could be added here if needed
+            // Camera controls overlay
+            VStack {
+                Spacer()
+                
+                HStack {
+                    Spacer()
+                    
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.title2.weight(.semibold))
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.6))
+                            )
+                    }
+                    .padding()
+                }
+            }
         }
         .alert("Camera Error", isPresented: $showingAlert) {
             Button("OK", role: .cancel) {
