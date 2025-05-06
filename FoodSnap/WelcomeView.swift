@@ -11,75 +11,73 @@ struct WelcomeView: View {
                 Theme.Colors.background
                     .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: Theme.Dimensions.largeSpacing * 1.5) {
-                        // App Logo and Name
-                        VStack(spacing: Theme.Dimensions.spacing) {
-                            Image(systemName: "camera.aperture")
-                                .font(.system(size: 60))
-                                .foregroundColor(Theme.Colors.accent)
-                                .padding(.bottom, 4)
-                            
-                            Text("Welcome to FoodSnap")
-                                .font(Theme.Typography.largeTitle)
-                                .foregroundColor(Theme.Colors.text)
-                                .multilineTextAlignment(.center)
-                            
-                            Text("Turn your ingredients into delicious recipes")
-                                .font(Theme.Typography.title3)
-                                .foregroundColor(Theme.Colors.secondaryText)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-                        .padding(.top, 40)
+                VStack(spacing: 0) {
+                    // App Logo and Name
+                    VStack(spacing: Theme.Dimensions.spacing) {
+                        Image(systemName: "camera.aperture")
+                            .font(.system(size: 60))
+                            .foregroundColor(Theme.Colors.accent)
+                            .padding(.bottom, 4)
                         
-                        // App Steps
-                        VStack(spacing: Theme.Dimensions.largeSpacing * 1.2) {
-                            // Step 1
-                            FeatureStep(
-                                icon: "camera.fill",
-                                iconColor: Theme.Colors.primary,
-                                title: "Snap Food Items",
-                                description: "Take a photo of your ingredients using your camera"
-                            )
-                            
-                            // Step 2
-                            FeatureStep(
-                                icon: "list.bullet.clipboard",
-                                iconColor: Theme.Colors.accent,
-                                title: "Manage Ingredients",
-                                description: "Review identified ingredients and set preferences"
-                            )
-                            
-                            // Step 3
-                            FeatureStep(
-                                icon: "fork.knife",
-                                iconColor: Theme.Colors.primary,
-                                title: "Get a Recipe",
-                                description: "Discover delicious recipes matching your ingredients"
-                            )
-                        }
-                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        .padding(.vertical, Theme.Dimensions.largeSpacing)
+                        Text("Welcome to FoodSnap")
+                            .font(Theme.Typography.largeTitle)
+                            .foregroundColor(Theme.Colors.text)
+                            .multilineTextAlignment(.center)
                         
-                        Spacer()
+                        Text("Turn your ingredients into delicious recipes")
+                            .font(Theme.Typography.title3)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
+                    
+                    // App Steps
+                    VStack(spacing: Theme.Dimensions.spacing * 1.5) {
+                        // Step 1
+                        FeatureStep(
+                            icon: "camera.fill",
+                            iconColor: Theme.Colors.primary,
+                            title: "Snap Food Items",
+                            description: "Take a photo of your ingredients using your camera"
+                        )
                         
-                        // Get Started Button
-                        NavigationLink(destination: ContentView(), isActive: $navigateToContentView) {
-                            Button(action: {
-                                navigateToContentView = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "camera")
-                                        .font(.headline)
-                                    Text("Snap Ingredients")
-                                        .font(Theme.Typography.title3)
-                                }
+                        // Step 2
+                        FeatureStep(
+                            icon: "list.bullet.clipboard",
+                            iconColor: Theme.Colors.accent,
+                            title: "Manage Ingredients",
+                            description: "Review identified ingredients and set preferences"
+                        )
+                        
+                        // Step 3
+                        FeatureStep(
+                            icon: "fork.knife",
+                            iconColor: Theme.Colors.primary,
+                            title: "Get a Recipe",
+                            description: "Discover delicious recipes matching your ingredients"
+                        )
+                    }
+                    .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    
+                    Spacer()
+                    
+                    // Get Started Button
+                    NavigationLink(destination: ContentView(), isActive: $navigateToContentView) {
+                        Button(action: {
+                            navigateToContentView = true
+                        }) {
+                            HStack {
+                                Image(systemName: "camera")
+                                    .font(.headline)
+                                Text("Snap Ingredients")
+                                    .font(Theme.Typography.title3)
                             }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                            .padding(.bottom, 30)
                         }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                        .padding(.vertical, 30)
                     }
                 }
             }
@@ -130,34 +128,34 @@ struct FeatureStep: View {
         HStack(alignment: .top, spacing: Theme.Dimensions.largeSpacing) {
             // Icon
             Image(systemName: icon)
-                .font(.system(size: 28))
+                .font(.system(size: 24))
                 .foregroundColor(.white)
-                .frame(width: 60, height: 60)
+                .frame(width: 50, height: 50)
                 .background(
                     Circle()
                         .fill(iconColor)
                 )
             
             // Text content
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(Theme.Typography.title2)
+                    .font(Theme.Typography.title3)
                     .foregroundColor(Theme.Colors.text)
                 
                 Text(description)
-                    .font(Theme.Typography.body)
+                    .font(Theme.Typography.callout)
                     .foregroundColor(Theme.Colors.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
             
             Spacer()
         }
         .padding(Theme.Dimensions.horizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
+            RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
                 .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 8, x: 0, y: 2)
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 6, x: 0, y: 2)
         )
     }
 }
