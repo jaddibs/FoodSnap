@@ -11,6 +11,7 @@ import UIKit
 struct ContentView: View {
     @State private var selectedImage: UIImage?
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     var body: some View {
         NavigationView {
@@ -101,15 +102,22 @@ struct ContentView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        // Settings button action (does nothing for now)
+                        isDarkMode.toggle()
                     }) {
-                        Image(systemName: "gearshape.fill")
+                        Image(systemName: "circle.lefthalf.filled")
                             .font(.system(size: 20))
-                            .foregroundColor(Theme.Colors.accent)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(
+                                isDarkMode ? Color.yellow : Color.gray,
+                                isDarkMode ? Color.gray : Color.black
+                            )
+                            .rotationEffect(.degrees(isDarkMode ? 180 : 0))
+                            .animation(.easeInOut, value: isDarkMode)
                     }
                 }
             }
         }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 
