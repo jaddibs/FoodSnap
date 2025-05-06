@@ -39,7 +39,7 @@ struct WelcomeView: View {
                         FeatureStep(
                             icon: "camera.fill",
                             iconColor: Theme.Colors.primary,
-                            title: "Snap Food Items",
+                            title: "Snap Ingredients",
                             description: "Take a photo of your ingredients using your camera"
                         )
                         
@@ -47,7 +47,7 @@ struct WelcomeView: View {
                         FeatureStep(
                             icon: "list.bullet.clipboard",
                             iconColor: Theme.Colors.accent,
-                            title: "Manage Ingredients",
+                            title: "Manage Mise en Place",
                             description: "Review identified ingredients and set preferences"
                         )
                         

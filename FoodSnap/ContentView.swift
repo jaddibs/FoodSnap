@@ -12,13 +12,50 @@ struct ContentView: View {
     @State private var selectedImage: UIImage?
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         ZStack {
             Theme.Colors.background
                 .ignoresSafeArea()
             
-            VStack(spacing: Theme.Dimensions.largeSpacing) {
+            VStack(spacing: 0) {
+                // Custom back button and title row
+                HStack {
+                    // Back button
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                                .font(Theme.Typography.subheadline.weight(.medium))
+                        }
+                        .foregroundColor(Theme.Colors.primary)
+                    }
+                    .padding(.leading, 4)
+                    
+                    Spacer()
+                    
+                    // Center title
+                    Text("Snap Ingredients")
+                        .font(Theme.Typography.title3)
+                        .foregroundColor(Theme.Colors.text)
+                    
+                    Spacer()
+                    
+                    // Empty view for balance
+                    Color.clear.frame(width: 60, height: 16)
+                }
+                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                
+                Divider()
+                    .background(Color.gray.opacity(0.2))
+                    .padding(.bottom, 12)
+                
                 // Main content area
                 ScrollView {
                     VStack(spacing: Theme.Dimensions.largeSpacing) {
@@ -92,6 +129,7 @@ struct ContentView: View {
             .padding(.bottom)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack(spacing: 8) {
