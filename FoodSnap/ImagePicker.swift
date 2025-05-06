@@ -169,29 +169,6 @@ struct EnhancedCameraView: View {
                 showingAlert = true
             })
             .ignoresSafeArea()
-            
-            // Camera controls overlay
-            VStack {
-                Spacer()
-                
-                HStack {
-                    Spacer()
-                    
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.title2.weight(.semibold))
-                            .foregroundColor(.white)
-                            .padding(12)
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.6))
-                            )
-                    }
-                    .padding()
-                }
-            }
         }
         .alert("Camera Error", isPresented: $showingAlert) {
             Button("OK", role: .cancel) {
