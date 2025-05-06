@@ -95,9 +95,15 @@ struct ContentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Text("FoodSnap")
-                        .font(Theme.Typography.title)
-                        .foregroundColor(Theme.Colors.text)
+                    HStack(spacing: 8) {
+                        Image(systemName: "camera.aperture")
+                            .font(.system(size: 22))
+                            .foregroundColor(Theme.Colors.accent)
+                        
+                        Text("FoodSnap")
+                            .font(Theme.Typography.title)
+                            .foregroundColor(Theme.Colors.text)
+                    }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -108,7 +114,7 @@ struct ContentView: View {
                             .font(.system(size: 20))
                             .symbolRenderingMode(.palette)
                             .foregroundStyle(
-                                isDarkMode ? Color.yellow : Color.gray,
+                                isDarkMode ? Theme.Colors.primary : Color.gray,
                                 isDarkMode ? Color.gray : Color.black
                             )
                             .rotationEffect(.degrees(isDarkMode ? 180 : 0))
@@ -117,7 +123,6 @@ struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 

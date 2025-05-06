@@ -21,6 +21,8 @@ struct FoodSnapApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage("isDarkMode") private var isDarkMode = false
+    @State private var isLoading = true
     
     init() {
         setupApp()
@@ -28,8 +30,22 @@ struct FoodSnapApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .preferredColorScheme(.none) // Allow system to control dark/light mode
+            ZStack {
+                if isLoading {
+                    SplashScreenView()
+                } else {
+                    ContentView()
+                }
+            }
+            .preferredColorScheme(isDarkMode ? .dark : .light)
+            .onAppear {
+                // Show splash screen for 1 second
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation {
+                        isLoading = false
+                    }
+                }
+            }
         }
     }
     
@@ -58,5 +74,28 @@ struct FoodSnapApp: App {
             UITabBar.appearance().standardAppearance = tabAppearance
             UITabBar.appearance().scrollEdgeAppearance = tabAppearance
         }
+    }
+}
+
+struct SplashScreenView: View {
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        ZStack {
+            Theme.Colors.background
+                .ignoresSafeArea()
+            
+            HStack(spacing: 12) {
+                Image(systemName: "camera.aperture")
+                    .font(.system(size: 40))
+                    .foregroundColor(Theme.Colors.accent)
+                
+                Text("FoodSnap")
+                    .font(Theme.Typography.largeTitle)
+                    .foregroundColor(Theme.Colors.text)
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut, value: true)
     }
 }
