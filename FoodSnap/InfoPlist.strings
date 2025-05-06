@@ -1,0 +1,5 @@
+/* Camera Usage Description */
+"NSCameraUsageDescription" = "FoodSnap needs access to your camera to take photos of food ingredients.";
+
+/* Photo Library Usage Description */
+"NSPhotoLibraryUsageDescription" = "FoodSnap needs access to your photo library to select images of food ingredients."; 

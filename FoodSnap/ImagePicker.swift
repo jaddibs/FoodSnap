@@ -3,6 +3,20 @@ import PhotosUI
 import AVFoundation
 import UIKit
 
+// This extension adds Info.plist entries through code as an alternative approach
+extension Bundle {
+    // Make sure this key is included in build settings or Info.plist
+    var cameraUsageDescription: String {
+        return self.infoDictionary?["NSCameraUsageDescription"] as? String ?? 
+               "FoodSnap needs camera access to take photos of food ingredients."
+    }
+    
+    var photoLibraryUsageDescription: String {
+        return self.infoDictionary?["NSPhotoLibraryUsageDescription"] as? String ?? 
+               "FoodSnap needs photo library access to select images of food ingredients."
+    }
+}
+
 struct ImagePicker: View {
     @Binding var selectedImage: UIImage?
     @State private var showImagePicker = false
@@ -10,6 +24,7 @@ struct ImagePicker: View {
     @State private var showPermissionAlert = false
     @State private var permissionMessage = ""
     @State private var photoItem: PhotosPickerItem?
+    @State private var cameraError: String? = nil
     
     var body: some View {
         VStack {
@@ -39,7 +54,10 @@ struct ImagePicker: View {
             .padding()
         }
         .sheet(isPresented: $showCamera) {
-            CameraView(selectedImage: $selectedImage)
+            CameraView(selectedImage: $selectedImage, onError: { error in
+                cameraError = error
+                showCamera = false
+            })
         }
         .alert("Permission Required", isPresented: $showPermissionAlert) {
             Button("OK", role: .cancel) { }
@@ -50,6 +68,14 @@ struct ImagePicker: View {
             }
         } message: {
             Text(permissionMessage)
+        }
+        .alert("Camera Error", isPresented: Binding(
+            get: { cameraError != nil },
+            set: { if !$0 { cameraError = nil } }
+        )) {
+            Button("OK", role: .cancel) { cameraError = nil }
+        } message: {
+            Text(cameraError ?? "Unknown error")
         }
         .onChange(of: photoItem) { oldItem, newItem in
             Task {
@@ -62,14 +88,24 @@ struct ImagePicker: View {
     }
     
     private func checkCameraPermission() {
+        // Check if camera is available first
+        if !UIImagePickerController.isSourceTypeAvailable(.camera) {
+            permissionMessage = "This device doesn't have a camera available."
+            showPermissionAlert = true
+            return
+        }
+        
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             showCamera = true
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
-                if granted {
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    if granted {
                         showCamera = true
+                    } else {
+                        permissionMessage = "Camera access is required to take photos."
+                        showPermissionAlert = true
                     }
                 }
             }
@@ -77,7 +113,8 @@ struct ImagePicker: View {
             permissionMessage = "Camera access is required to take photos. Please enable it in Settings."
             showPermissionAlert = true
         @unknown default:
-            break
+            permissionMessage = "Unknown camera permission status."
+            showPermissionAlert = true
         }
     }
 }
@@ -85,11 +122,22 @@ struct ImagePicker: View {
 struct CameraView: UIViewControllerRepresentable {
     @Binding var selectedImage: UIImage?
     @Environment(\.presentationMode) var presentationMode
+    var onError: (String) -> Void
     
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.delegate = context.coordinator
-        picker.sourceType = .camera
+        
+        // Add safety check - this should prevent crashes if camera is not available
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            picker.sourceType = .camera
+        } else {
+            DispatchQueue.main.async {
+                onError("Camera is not available on this device")
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
+        
         return picker
     }
     
@@ -114,6 +162,12 @@ struct CameraView: UIViewControllerRepresentable {
         }
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        // Add error handling for the image picker controller
+        func imagePickerControllerDidFail(_ picker: UIImagePickerController, didFailWithError error: Error) {
+            parent.onError("Camera error: \(error.localizedDescription)")
             parent.presentationMode.wrappedValue.dismiss()
         }
     }
