@@ -50,6 +50,7 @@ struct SnapIngredients: View {
     @State private var selectedImages: [UIImage] = []
     @State private var isAnalyzing = false
     @State private var showTips = true
+    @State private var navigateToManageIngredients = false
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
     @Environment(\.presentationMode) var presentationMode
@@ -224,6 +225,13 @@ struct SnapIngredients: View {
             }
             .padding(.bottom)
             
+            // Navigation link to ManageIngredients (hidden)
+            NavigationLink(
+                destination: ManageIngredients(),
+                isActive: $navigateToManageIngredients,
+                label: { EmptyView() }
+            )
+            
             // Analysis overlay (if analyzing)
             if isAnalyzing {
                 ZStack {
@@ -299,9 +307,8 @@ struct SnapIngredients: View {
             
             withAnimation {
                 isAnalyzing = false
+                navigateToManageIngredients = true
             }
-            
-            // TODO: Navigate to results screen
         }
     }
 }
