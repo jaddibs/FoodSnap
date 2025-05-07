@@ -17,8 +17,104 @@ extension Bundle {
     }
 }
 
+// MARK: - Capture Button View
+struct CaptureButton: View {
+    let action: () -> Void
+    let isDisabled: Bool
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(
+                        Circle()
+                            .fill(Theme.Colors.primary)
+                    )
+                
+                Text("Capture")
+                    .font(Theme.Typography.callout.weight(.medium))
+                    .foregroundColor(Theme.Colors.text)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                    .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                    .stroke(Theme.Colors.primary.opacity(0.5), lineWidth: 1)
+            )
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+    }
+}
+
+// MARK: - Upload Button View
+struct UploadButton: View {
+    let photoItem: Binding<PhotosPickerItem?>
+    let isDisabled: Bool
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        PhotosPicker(selection: photoItem, matching: .images) {
+            VStack(spacing: 8) {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(
+                        Circle()
+                            .fill(Theme.Colors.accent)
+                    )
+                
+                Text("Upload")
+                    .font(Theme.Typography.callout.weight(.medium))
+                    .foregroundColor(Theme.Colors.text)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                    .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                    .stroke(Theme.Colors.accent.opacity(0.5), lineWidth: 1)
+            )
+        }
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.5 : 1)
+    }
+}
+
+// MARK: - Selected Images Preview
+struct SelectedImagesPreview: View {
+    let images: [UIImage]
+    let onDelete: (Int) -> Void
+    
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Theme.Dimensions.spacing) {
+                ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                    ImagePreview(image: image, onDelete: {
+                        onDelete(index)
+                    })
+                }
+            }
+            .padding(.horizontal)
+        }
+        .frame(height: 120)
+    }
+}
+
 struct ImagePicker: View {
-    @Binding var selectedImage: UIImage?
+    @Binding var selectedImages: [UIImage]
     @State private var showImagePicker = false
     @State private var showCamera = false
     @State private var showPermissionAlert = false
@@ -27,71 +123,49 @@ struct ImagePicker: View {
     @State private var cameraError: String? = nil
     @Environment(\.colorScheme) var colorScheme
     
+    private let maxImages = 3
+    
     var body: some View {
-        HStack(spacing: Theme.Dimensions.largeSpacing) {
-            Button(action: {
-                checkCameraPermission()
-            }) {
-                VStack(spacing: 8) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .background(
-                            Circle()
-                                .fill(Theme.Colors.primary)
-                        )
-                    
-                    Text("Capture")
-                        .font(Theme.Typography.callout.weight(.medium))
-                        .foregroundColor(Theme.Colors.text)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                        .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+        VStack(spacing: Theme.Dimensions.largeSpacing) {
+            // Image capture/upload buttons
+            HStack(spacing: Theme.Dimensions.largeSpacing) {
+                CaptureButton(
+                    action: { checkCameraPermission() },
+                    isDisabled: selectedImages.count >= maxImages
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                        .stroke(Theme.Colors.primary.opacity(0.5), lineWidth: 1)
+                
+                UploadButton(
+                    photoItem: $photoItem,
+                    isDisabled: selectedImages.count >= maxImages
                 )
             }
             
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                VStack(spacing: 8) {
-                    Image(systemName: "photo.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(.white)
-                        .padding(10)
-                        .background(
-                            Circle()
-                                .fill(Theme.Colors.accent)
-                        )
-                    
-                    Text("Upload")
-                        .font(Theme.Typography.callout.weight(.medium))
-                        .foregroundColor(Theme.Colors.text)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                        .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+            // Selected images preview
+            if !selectedImages.isEmpty {
+                SelectedImagesPreview(
+                    images: selectedImages,
+                    onDelete: { index in
+                        selectedImages.remove(at: index)
+                    }
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                        .stroke(Theme.Colors.accent.opacity(0.5), lineWidth: 1)
-                )
+                
+                // Image counter
+                Text("\(selectedImages.count)/\(maxImages) images")
+                    .font(Theme.Typography.footnote)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .padding(.top, 4)
             }
         }
         .sheet(isPresented: $showCamera) {
-            EnhancedCameraView(selectedImage: $selectedImage)
-                .ignoresSafeArea()
-                .onDisappear {
-                    // Reset camera error on dismiss if needed
-                    cameraError = nil
+            EnhancedCameraView(onImageCaptured: { image in
+                if let image = image {
+                    selectedImages.append(image)
                 }
+            })
+            .ignoresSafeArea()
+            .onDisappear {
+                cameraError = nil
+            }
         }
         .alert("Permission Required", isPresented: $showPermissionAlert) {
             Button("Cancel", role: .cancel) { }
@@ -116,7 +190,9 @@ struct ImagePicker: View {
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
-                    selectedImage = image
+                    if selectedImages.count < maxImages {
+                        selectedImages.append(image)
+                    }
                 }
             }
         }
@@ -154,17 +230,46 @@ struct ImagePicker: View {
     }
 }
 
-// Enhanced camera view that properly sets up the camera session
+// MARK: - Image Preview Component
+struct ImagePreview: View {
+    let image: UIImage
+    let onDelete: () -> Void
+    
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                        .stroke(Theme.Colors.secondary, lineWidth: 1)
+                )
+            
+            Button(action: onDelete) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .background(Color.black.opacity(0.5))
+                    .clipShape(Circle())
+            }
+            .padding(4)
+        }
+    }
+}
+
+// MARK: - Enhanced Camera View
 struct EnhancedCameraView: View {
-    @Binding var selectedImage: UIImage?
+    let onImageCaptured: (UIImage?) -> Void
     @Environment(\.presentationMode) var presentationMode
     @State private var showingAlert = false
     @State private var errorMessage = ""
     
     var body: some View {
         ZStack {
-            // Use UIKit-based camera view controller
-            CameraViewControllerRepresentable(selectedImage: $selectedImage, onComplete: {
+            CameraViewControllerRepresentable(onImageCaptured: { image in
+                onImageCaptured(image)
                 presentationMode.wrappedValue.dismiss()
             }, onError: { error in
                 errorMessage = error
@@ -182,11 +287,10 @@ struct EnhancedCameraView: View {
     }
 }
 
-// UIKit-based camera view controller with proper camera configuration
+// MARK: - Camera View Controller
 struct CameraViewControllerRepresentable: UIViewControllerRepresentable {
-    @Binding var selectedImage: UIImage?
-    var onComplete: () -> Void
-    var onError: (String) -> Void
+    let onImageCaptured: (UIImage?) -> Void
+    let onError: (String) -> Void
     
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -225,15 +329,14 @@ struct CameraViewControllerRepresentable: UIViewControllerRepresentable {
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
-                parent.selectedImage = image
-                parent.onComplete()
+                parent.onImageCaptured(image)
             } else {
                 parent.onError("Failed to capture image")
             }
         }
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.onComplete()
+            parent.onImageCaptured(nil)
         }
     }
 } 

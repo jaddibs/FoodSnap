@@ -9,7 +9,7 @@ import SwiftUI
 import UIKit
 
 struct SnapIngredients: View {
-    @State private var selectedImage: UIImage?
+    @State private var selectedImages: [UIImage] = []
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
     @Environment(\.presentationMode) var presentationMode
@@ -67,29 +67,14 @@ struct SnapIngredients: View {
                 // Main content area
                 ScrollView {
                     VStack(spacing: Theme.Dimensions.largeSpacing) {
-                        if let image = selectedImage {
-                            // Selected Image Preview
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxHeight: 260)
-                                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
-                                        .stroke(Theme.Colors.secondary, lineWidth: 3)
-                                )
-                                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                                .padding(.horizontal)
-                        }
-                        
                         // Image Picker
-                        ImagePicker(selectedImage: $selectedImage)
+                        ImagePicker(selectedImages: $selectedImages)
                             .padding(.horizontal)
                         
-                        // Analyze Button (shows when image is selected)
-                        if selectedImage != nil {
+                        // Analyze Button (shows when at least one image is selected)
+                        if !selectedImages.isEmpty {
                             Button(action: {
-                                // TODO: Process image with Gemini API
+                                // TODO: Process images with Gemini API
                             }) {
                                 HStack {
                                     Image(systemName: "magnifyingglass")
