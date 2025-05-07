@@ -8,8 +8,48 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Photo Tip View
+struct PhotoTipView: View {
+    let icon: String
+    let title: String
+    let description: String
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            // Tip icon
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(Theme.Colors.primary)
+                .frame(width: 24, height: 24)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                // Tip title
+                Text(title)
+                    .font(Theme.Typography.subheadline.weight(.medium))
+                    .foregroundColor(Theme.Colors.text)
+                
+                // Tip description
+                Text(description)
+                    .font(Theme.Typography.footnote)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
+        )
+    }
+}
+
 struct SnapIngredients: View {
     @State private var selectedImages: [UIImage] = []
+    @State private var isAnalyzing = false
+    @State private var showTips = true
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
     @Environment(\.presentationMode) var presentationMode
@@ -62,37 +102,155 @@ struct SnapIngredients: View {
                     .foregroundColor(Theme.Colors.secondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                    .padding(.bottom, Theme.Dimensions.largeSpacing)
+                    .padding(.bottom, 8)
                 
                 // Main content area
                 ScrollView {
-                    VStack(spacing: Theme.Dimensions.largeSpacing) {
+                    VStack(spacing: 12) {
                         // Image Picker
                         ImagePicker(selectedImages: $selectedImages)
                         
                         // Analyze Button (always visible, disabled when no images)
                         Button(action: {
-                            // TODO: Process images with Gemini API
+                            startAnalysis()
                         }) {
                             HStack {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.headline)
-                                Text("Analyze Ingredients")
+                                if isAnalyzing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .frame(width: 20, height: 20)
+                                        .padding(.trailing, 5)
+                                } else {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.headline)
+                                }
+                                Text(isAnalyzing ? "Analyzing..." : "Analyze Ingredients")
                                     .font(Theme.Typography.title3)
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle())
                         .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        .padding(.top, 8)
-                        .disabled(selectedImages.isEmpty)
-                        .opacity(selectedImages.isEmpty ? 0.5 : 1)
+                        .padding(.top, 4)
+                        .disabled(selectedImages.isEmpty || isAnalyzing)
+                        .opacity((selectedImages.isEmpty || isAnalyzing) ? 0.7 : 1)
                         
-                        Spacer(minLength: 30)
+                        // Tips Section
+                        if showTips {
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Tips section header with toggle button
+                                HStack {
+                                    Text("Photo Tips")
+                                        .font(Theme.Typography.title3)
+                                        .foregroundColor(Theme.Colors.text)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        withAnimation {
+                                            showTips.toggle()
+                                        }
+                                    }) {
+                                        Image(systemName: "chevron.up")
+                                            .font(.footnote.weight(.medium))
+                                            .foregroundColor(Theme.Colors.secondaryText)
+                                            .padding(6)
+                                            .background(
+                                                Circle()
+                                                    .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                                                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+                                            )
+                                    }
+                                }
+                                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                                .padding(.bottom, 2)
+                                
+                                VStack(spacing: 8) {
+                                    PhotoTipView(
+                                        icon: "light.max",
+                                        title: "Good Lighting",
+                                        description: "Take photos in well-lit areas to ensure ingredients are clearly visible."
+                                    )
+                                    
+                                    PhotoTipView(
+                                        icon: "camera.viewfinder",
+                                        title: "Clear Focus",
+                                        description: "Hold your camera steady and tap to focus on the ingredients."
+                                    )
+                                    
+                                    PhotoTipView(
+                                        icon: "square.grid.3x3",
+                                        title: "Group Ingredients",
+                                        description: "Arrange ingredients so they're visible but not overlapping too much."
+                                    )
+                                }
+                                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                            }
+                            .padding(.vertical, 4)
+                        } else {
+                            // Collapsed tips button
+                            Button(action: {
+                                withAnimation {
+                                    showTips.toggle()
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "lightbulb.fill")
+                                        .foregroundColor(Theme.Colors.accent)
+                                    
+                                    Text("Show Photo Tips")
+                                        .font(Theme.Typography.callout.weight(.medium))
+                                        .foregroundColor(Theme.Colors.text)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.down")
+                                        .font(.callout)
+                                        .foregroundColor(Theme.Colors.secondaryText)
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                                        .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                                        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
+                                )
+                            }
+                            .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                        }
+                        
+                        Spacer(minLength: 16)
                     }
                     .padding(.bottom)
                 }
             }
             .padding(.bottom)
+            
+            // Analysis overlay (if analyzing)
+            if isAnalyzing {
+                ZStack {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.primary))
+                            .scaleEffect(1.5)
+                        
+                        Text("Analyzing your ingredients...")
+                            .font(Theme.Typography.title3)
+                            .foregroundColor(.white)
+                        
+                        Text("This may take a moment")
+                            .font(Theme.Typography.subheadline)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .padding(30)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.black.opacity(0.7))
+                    )
+                }
+                .transition(.opacity)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -124,6 +282,26 @@ struct SnapIngredients: View {
                         .animation(.easeInOut, value: isDarkMode)
                 }
             }
+        }
+    }
+    
+    // Function to start the ingredient analysis process
+    private func startAnalysis() {
+        guard !selectedImages.isEmpty else { return }
+        
+        withAnimation {
+            isAnalyzing = true
+        }
+        
+        // Simulate API call with a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            // TODO: Process images with Gemini API
+            
+            withAnimation {
+                isAnalyzing = false
+            }
+            
+            // TODO: Navigate to results screen
         }
     }
 }
