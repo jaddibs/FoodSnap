@@ -93,23 +93,82 @@ struct UploadButton: View {
     }
 }
 
-// MARK: - Selected Images Preview
-struct SelectedImagesPreview: View {
+// MARK: - Photo Frame
+struct PhotoFrame: View {
+    @Environment(\.colorScheme) var colorScheme
     let images: [UIImage]
-    let onDelete: (Int) -> Void
+    let onDelete: ((Int) -> Void)?
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        VStack(spacing: 12) {
             HStack(spacing: Theme.Dimensions.spacing) {
-                ForEach(Array(images.enumerated()), id: \.offset) { index, image in
-                    ImagePreview(image: image, onDelete: {
-                        onDelete(index)
-                    })
+                ForEach(0..<3) { index in
+                    ZStack {
+                        // Background placeholder
+                        RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                            .fill(colorScheme == .dark ? 
+                                  Color.black.opacity(0.15) : 
+                                  Color.white.opacity(0.7))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                                    .stroke(
+                                        index < images.count ? 
+                                            Theme.Colors.secondary : 
+                                            Theme.Colors.secondary.opacity(0.3),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .frame(width: 100, height: 100)
+                        
+                        // Photo if available
+                        if index < images.count {
+                            Image(uiImage: images[index])
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                                        .stroke(Theme.Colors.secondary, lineWidth: 1)
+                                )
+                            
+                            // Delete button
+                            if let onDelete = onDelete {
+                                Button(action: { onDelete(index) }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .background(Color.black.opacity(0.5))
+                                        .clipShape(Circle())
+                                }
+                                .padding(4)
+                                .offset(x: 40, y: -40)
+                            }
+                        }
+                    }
                 }
             }
             .padding(.horizontal)
+            
+            // Image counter (always visible)
+            Text("\(images.count)/3 images")
+                .font(Theme.Typography.footnote)
+                .foregroundColor(Theme.Colors.secondaryText)
         }
-        .frame(height: 120)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
+                .fill(colorScheme == .dark ? 
+                      Color.black.opacity(0.1) : 
+                      Color.white.opacity(0.8))
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
+                .stroke(Theme.Colors.secondary.opacity(0.2), lineWidth: 1.5)
+        )
+        .padding(.horizontal)
     }
 }
 
@@ -140,21 +199,13 @@ struct ImagePicker: View {
                 )
             }
             
-            // Selected images preview
-            if !selectedImages.isEmpty {
-                SelectedImagesPreview(
-                    images: selectedImages,
-                    onDelete: { index in
-                        selectedImages.remove(at: index)
-                    }
-                )
-                
-                // Image counter
-                Text("\(selectedImages.count)/\(maxImages) images")
-                    .font(Theme.Typography.footnote)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                    .padding(.top, 4)
-            }
+            // Photo frame with placeholder or images
+            PhotoFrame(
+                images: selectedImages,
+                onDelete: { index in
+                    selectedImages.remove(at: index)
+                }
+            )
         }
         .sheet(isPresented: $showCamera) {
             EnhancedCameraView(onImageCaptured: { image in
@@ -226,35 +277,6 @@ struct ImagePicker: View {
         @unknown default:
             permissionMessage = "Unknown camera permission status."
             showPermissionAlert = true
-        }
-    }
-}
-
-// MARK: - Image Preview Component
-struct ImagePreview: View {
-    let image: UIImage
-    let onDelete: () -> Void
-    
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 100, height: 100)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                        .stroke(Theme.Colors.secondary, lineWidth: 1)
-                )
-            
-            Button(action: onDelete) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white)
-                    .background(Color.black.opacity(0.5))
-                    .clipShape(Circle())
-            }
-            .padding(4)
         }
     }
 }

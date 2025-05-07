@@ -71,22 +71,22 @@ struct SnapIngredients: View {
                         ImagePicker(selectedImages: $selectedImages)
                             .padding(.horizontal)
                         
-                        // Analyze Button (shows when at least one image is selected)
-                        if !selectedImages.isEmpty {
-                            Button(action: {
-                                // TODO: Process images with Gemini API
-                            }) {
-                                HStack {
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.headline)
-                                    Text("Analyze Ingredients")
-                                        .font(Theme.Typography.title3)
-                                }
+                        // Analyze Button (always visible, disabled when no images)
+                        Button(action: {
+                            // TODO: Process images with Gemini API
+                        }) {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.headline)
+                                Text("Analyze Ingredients")
+                                    .font(Theme.Typography.title3)
                             }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .padding(.horizontal)
-                            .padding(.top, 8)
                         }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .disabled(selectedImages.isEmpty)
+                        .opacity(selectedImages.isEmpty ? 0.5 : 1)
                         
                         Spacer(minLength: 30)
                     }
