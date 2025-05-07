@@ -31,17 +31,19 @@ struct FoodSnapApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
+                WelcomeView()
+                    .opacity(isLoading ? 0 : 1)
+                
                 if isLoading {
                     SplashScreenView()
-                } else {
-                    WelcomeView()
+                        .opacity(isLoading ? 1 : 0)
                 }
             }
             .preferredColorScheme(isDarkMode ? .dark : .light)
             .onAppear {
-                // Show splash screen for 1 second
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation {
+                // Simple cross-fade transition after 1.2 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    withAnimation(.easeInOut(duration: 0.8)) {
                         isLoading = false
                     }
                 }
@@ -79,6 +81,7 @@ struct FoodSnapApp: App {
 
 struct SplashScreenView: View {
     @Environment(\.colorScheme) var colorScheme
+    @State private var logoScale: CGFloat = 0.9
     
     var body: some View {
         ZStack {
@@ -94,8 +97,12 @@ struct SplashScreenView: View {
                     .font(Theme.Typography.largeTitle)
                     .foregroundColor(Theme.Colors.text)
             }
+            .scaleEffect(logoScale)
+            .onAppear {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    logoScale = 1.0
+                }
+            }
         }
-        .transition(.opacity)
-        .animation(.easeInOut, value: true)
     }
 }
