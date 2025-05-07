@@ -44,6 +44,7 @@ struct CaptureButton: View {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
                     .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 6, x: 0, y: 2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
@@ -82,6 +83,7 @@ struct UploadButton: View {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
                     .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 6, x: 0, y: 2)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
@@ -148,27 +150,21 @@ struct PhotoFrame: View {
                     }
                 }
             }
-            .padding(.horizontal)
             
             // Image counter (always visible)
             Text("\(images.count)/3 images")
                 .font(Theme.Typography.footnote)
                 .foregroundColor(Theme.Colors.secondaryText)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(Theme.Dimensions.horizontalPadding)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
+            RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
                 .fill(colorScheme == .dark ? 
-                      Color.black.opacity(0.1) : 
-                      Color.white.opacity(0.8))
-                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                      Color.black.opacity(0.2) : 
+                      Color.white)
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 6, x: 0, y: 2)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
-                .stroke(Theme.Colors.secondary.opacity(0.2), lineWidth: 1.5)
-        )
-        .padding(.horizontal)
+        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
     }
 }
 
@@ -198,6 +194,7 @@ struct ImagePicker: View {
                     isDisabled: selectedImages.count >= maxImages
                 )
             }
+            .padding(.horizontal, Theme.Dimensions.horizontalPadding)
             
             // Photo frame with placeholder or images
             PhotoFrame(

@@ -69,7 +69,6 @@ struct SnapIngredients: View {
                     VStack(spacing: Theme.Dimensions.largeSpacing) {
                         // Image Picker
                         ImagePicker(selectedImages: $selectedImages)
-                            .padding(.horizontal)
                         
                         // Analyze Button (always visible, disabled when no images)
                         Button(action: {
@@ -83,7 +82,7 @@ struct SnapIngredients: View {
                             }
                         }
                         .buttonStyle(PrimaryButtonStyle())
-                        .padding(.horizontal)
+                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                         .padding(.top, 8)
                         .disabled(selectedImages.isEmpty)
                         .opacity(selectedImages.isEmpty ? 0.5 : 1)
