@@ -40,7 +40,7 @@ struct WelcomeView: View {
                             icon: "camera.fill",
                             iconColor: Theme.Colors.primary,
                             title: "Snap Ingredients",
-                            description: "Take or upload a photo of your ingredients"
+                            description: "Capture or upload a photo of your ingredients"
                         )
                         
                         // Step 2
@@ -69,9 +69,7 @@ struct WelcomeView: View {
                             navigateToSnapIngredients = true
                         }) {
                             HStack {
-                                Image(systemName: "camera")
-                                    .font(.headline)
-                                Text("Snap Ingredients")
+                                Text("Get Started!")
                                     .font(Theme.Typography.title3)
                             }
                         }

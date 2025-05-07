@@ -56,6 +56,14 @@ struct SnapIngredients: View {
                     .background(Color.gray.opacity(0.2))
                     .padding(.bottom, 12)
                 
+                // Instructions text
+                Text("Capture or upload a photo of your ingredients")
+                    .font(Theme.Typography.callout)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .padding(.bottom, Theme.Dimensions.largeSpacing)
+                
                 // Main content area
                 ScrollView {
                     VStack(spacing: Theme.Dimensions.largeSpacing) {
@@ -72,32 +80,6 @@ struct SnapIngredients: View {
                                 )
                                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                                 .padding(.horizontal)
-                        } else {
-                            // Placeholder
-                            VStack(spacing: Theme.Dimensions.spacing) {
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(Theme.Colors.primary.opacity(0.8))
-                                    .padding()
-                                
-                                Text("Take or select a photo of your ingredients")
-                                    .font(Theme.Typography.callout)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(height: 220)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
-                                    .fill(colorScheme == .dark ? Color.black.opacity(0.1) : Color.white)
-                                    .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Theme.Dimensions.largeCornerRadius)
-                                    .stroke(Theme.Colors.secondary, lineWidth: 1.5)
-                            )
-                            .padding(.horizontal)
                         }
                         
                         // Image Picker

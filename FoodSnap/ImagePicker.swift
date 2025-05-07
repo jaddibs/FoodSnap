@@ -42,7 +42,7 @@ struct ImagePicker: View {
                                 .fill(Theme.Colors.primary)
                         )
                     
-                    Text("Take Photo")
+                    Text("Capture")
                         .font(Theme.Typography.callout.weight(.medium))
                         .foregroundColor(Theme.Colors.text)
                 }
@@ -69,7 +69,7 @@ struct ImagePicker: View {
                                 .fill(Theme.Colors.accent)
                         )
                     
-                    Text("Upload Photo")
+                    Text("Upload")
                         .font(Theme.Typography.callout.weight(.medium))
                         .foregroundColor(Theme.Colors.text)
                 }
