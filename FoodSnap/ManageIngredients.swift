@@ -149,10 +149,139 @@ struct IngredientItemView: View {
     }
 }
 
+// MARK: - Navigation Button
+struct NavigationButtonView: View {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    let isPrimary: Bool
+    
+    var body: some View {
+        Group {
+            if isPrimary {
+                primaryButton
+            } else {
+                secondaryButton
+            }
+        }
+    }
+    
+    private var primaryButton: some View {
+        Button(action: action) {
+            HStack {
+                if icon == "chevron.left" {
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                
+                Text(title)
+                    .font(Theme.Typography.title3)
+                
+                if icon == "chevron.right" || icon == "arrow.right" {
+                    Image(systemName: icon)
+                        .font(.headline)
+                }
+            }
+        }
+        .buttonStyle(PrimaryButtonStyle())
+    }
+    
+    private var secondaryButton: some View {
+        Button(action: action) {
+            HStack {
+                if icon == "chevron.left" {
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                
+                Text(title)
+                    .font(Theme.Typography.title3)
+                
+                if icon == "chevron.right" || icon == "arrow.right" {
+                    Image(systemName: icon)
+                        .font(.headline)
+                }
+            }
+        }
+        .buttonStyle(SecondaryButtonStyle())
+    }
+}
+
+// MARK: - Progress Indicator
+struct ProgressIndicatorView: View {
+    let currentStep: Int
+    let totalSteps: Int
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(1...totalSteps, id: \.self) { step in
+                Circle()
+                    .fill(step <= currentStep ? Theme.Colors.primary : Color.gray.opacity(0.3))
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .padding(.vertical, 12)
+    }
+}
+
+// MARK: - Section Types
+enum SurveySection: Int, CaseIterable {
+    case ingredients = 1
+    case mealType = 2
+    case skillLevel = 3
+    case cookTime = 4
+    case cuisineTypes = 5
+    case allergies = 6
+    case dietaryRestrictions = 7
+    case nutritionalRequirements = 8
+    
+    var title: String {
+        switch self {
+        case .ingredients: return "Ingredients"
+        case .mealType: return "Meal Type"
+        case .skillLevel: return "Skill Level"
+        case .cookTime: return "Cook Time"
+        case .cuisineTypes: return "Cuisine Types"
+        case .allergies: return "Allergies/Intolerances"
+        case .dietaryRestrictions: return "Dietary Restrictions"
+        case .nutritionalRequirements: return "Nutritional Requirements"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .ingredients: return "carrot"
+        case .mealType: return "fork.knife"
+        case .skillLevel: return "chart.bar"
+        case .cookTime: return "clock"
+        case .cuisineTypes: return "globe"
+        case .allergies: return "exclamationmark.triangle"
+        case .dietaryRestrictions: return "leaf"
+        case .nutritionalRequirements: return "heart"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .ingredients: return "These are the analyzed ingredients, add or remove ingredients for your recipe."
+        case .mealType: return "What type of meal would you like to make?"
+        case .skillLevel: return "What's your cooking experience level?"
+        case .cookTime: return "How much time do you have for cooking?"
+        case .cuisineTypes: return "Select your preferred cuisine styles."
+        case .allergies: return "Any food allergies or intolerances to avoid?"
+        case .dietaryRestrictions: return "Any specific diet preferences?"
+        case .nutritionalRequirements: return "Any nutritional requirements?"
+        }
+    }
+}
+
 struct ManageIngredients: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
+    
+    // Current section in the survey
+    @State private var currentSection: SurveySection = .ingredients
     
     // Sample data - would be populated from analysis in real implementation
     @State private var identifiedIngredients: [String]
@@ -168,12 +297,6 @@ struct ManageIngredients: View {
     @State private var selectedDiets: Set<String> = []
     @State private var selectedNutrition: Set<String> = []
     
-    // Initialize with ingredients from Gemini analysis
-    init(identifiedIngredients: [String] = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]) {
-        _identifiedIngredients = State(initialValue: identifiedIngredients)
-        _selectedIngredients = State(initialValue: identifiedIngredients)
-    }
-    
     // Options
     let mealTypes = ["Breakfast", "Lunch", "Dinner", "Appetizer", "Main Course", "Side Dish", "Dessert"]
     let skillLevels = ["Beginner", "Intermediate", "Advanced"]
@@ -182,6 +305,12 @@ struct ManageIngredients: View {
     let allergies = ["Dairy", "Eggs", "Nuts", "Shellfish", "Wheat", "Soy"]
     let diets = ["Vegetarian", "Vegan", "Pescatarian", "Keto", "Paleo", "Low Carb", "Gluten Free"]
     let nutritionOptions = ["High Protein", "Low Fat", "Low Calorie", "Low Sodium", "Low Sugar"]
+    
+    // Initialize with ingredients from Gemini analysis
+    init(identifiedIngredients: [String] = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]) {
+        _identifiedIngredients = State(initialValue: identifiedIngredients)
+        _selectedIngredients = State(initialValue: identifiedIngredients)
+    }
     
     var body: some View {
         ZStack {
@@ -225,215 +354,80 @@ struct ManageIngredients: View {
                     .background(Color.gray.opacity(0.2))
                     .padding(.bottom, 12)
                 
-                // Instructions text
-                Text("Review identified ingredients and set preferences")
-                    .font(Theme.Typography.callout)
-                    .foregroundColor(Theme.Colors.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
+                // Section Header
+                HStack {
+                    Image(systemName: currentSection.icon)
+                        .font(.system(size: 22))
+                        .foregroundColor(Theme.Colors.primary)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(currentSection.title)
+                            .font(Theme.Typography.title2)
+                            .foregroundColor(Theme.Colors.text)
+                            
+                        Text(currentSection.description)
+                            .font(Theme.Typography.callout)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                .padding(.bottom, 12)
                 
-                // Main content area
+                // Progress indicator
+                ProgressIndicatorView(currentStep: currentSection.rawValue, totalSteps: SurveySection.allCases.count)
+                    .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    .padding(.bottom, 16)
+                
+                // Main content area - survey section content
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        // MARK: - Ingredients Section
-                        SectionHeaderView(title: "Ingredients", icon: "carrot")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(identifiedIngredients, id: \.self) { ingredient in
-                                IngredientItemView(
-                                    ingredient: ingredient,
-                                    isSelected: selectedIngredients.contains(ingredient),
-                                    onToggle: {
-                                        if selectedIngredients.contains(ingredient) {
-                                            selectedIngredients.removeAll { $0 == ingredient }
-                                        } else {
-                                            selectedIngredients.append(ingredient)
-                                        }
-                                    },
-                                    onRemove: {
-                                        identifiedIngredients.removeAll { $0 == ingredient }
-                                        selectedIngredients.removeAll { $0 == ingredient }
-                                    }
-                                )
-                            }
-                            
-                            // Add new ingredient
-                            HStack {
-                                TextField("Add ingredient", text: $newIngredient)
-                                    .font(Theme.Typography.callout)
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                                            .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
-                                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
-                                    )
-                                
-                                Button(action: {
-                                    if !newIngredient.isEmpty && !identifiedIngredients.contains(newIngredient) {
-                                        identifiedIngredients.append(newIngredient)
-                                        selectedIngredients.append(newIngredient)
-                                        newIngredient = ""
-                                    }
-                                }) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(Theme.Colors.primary)
-                                }
-                                .disabled(newIngredient.isEmpty)
-                                .opacity(newIngredient.isEmpty ? 0.5 : 1)
-                            }
+                        switch currentSection {
+                        case .ingredients:
+                            ingredientsSectionView
+                        case .mealType:
+                            mealTypeSectionView
+                        case .skillLevel:
+                            skillLevelSectionView
+                        case .cookTime:
+                            cookTimeSectionView
+                        case .cuisineTypes:
+                            cuisineTypesSectionView
+                        case .allergies:
+                            allergiesSectionView
+                        case .dietaryRestrictions:
+                            dietaryRestrictionsSectionView
+                        case .nutritionalRequirements:
+                            nutritionalRequirementsSectionView
                         }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Meal Type Section
-                        SectionHeaderView(title: "Meal Type", icon: "fork.knife")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(mealTypes, id: \.self) { mealType in
-                                SingleSelectionOptionView(
-                                    option: mealType,
-                                    title: mealType,
-                                    isSelected: selectedMealType == mealType,
-                                    action: { selectedMealType = $0 }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Skill Level Section
-                        SectionHeaderView(title: "Skill Level", icon: "chart.bar")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(skillLevels, id: \.self) { level in
-                                SingleSelectionOptionView(
-                                    option: level,
-                                    title: level,
-                                    isSelected: selectedSkillLevel == level,
-                                    action: { selectedSkillLevel = $0 }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Cook Time Section
-                        SectionHeaderView(title: "Cook Time", icon: "clock")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(cookTimes, id: \.self) { time in
-                                SingleSelectionOptionView(
-                                    option: time,
-                                    title: time,
-                                    isSelected: selectedCookTime == time,
-                                    action: { selectedCookTime = $0 }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Cuisine Types Section
-                        SectionHeaderView(title: "Cuisine Types", icon: "globe")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(cuisines, id: \.self) { cuisine in
-                                MultiSelectionOptionView(
-                                    option: cuisine,
-                                    title: cuisine,
-                                    isSelected: selectedCuisines.contains(cuisine),
-                                    action: { cuisine in
-                                        if selectedCuisines.contains(cuisine) {
-                                            selectedCuisines.remove(cuisine)
-                                        } else {
-                                            selectedCuisines.insert(cuisine)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Allergies/Intolerances Section
-                        SectionHeaderView(title: "Allergies/Intolerances", icon: "exclamationmark.triangle")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(allergies, id: \.self) { allergy in
-                                MultiSelectionOptionView(
-                                    option: allergy,
-                                    title: allergy,
-                                    isSelected: selectedAllergies.contains(allergy),
-                                    action: { allergy in
-                                        if selectedAllergies.contains(allergy) {
-                                            selectedAllergies.remove(allergy)
-                                        } else {
-                                            selectedAllergies.insert(allergy)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Dietary Restrictions Section
-                        SectionHeaderView(title: "Dietary Restrictions", icon: "leaf")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(diets, id: \.self) { diet in
-                                MultiSelectionOptionView(
-                                    option: diet,
-                                    title: diet,
-                                    isSelected: selectedDiets.contains(diet),
-                                    action: { diet in
-                                        if selectedDiets.contains(diet) {
-                                            selectedDiets.remove(diet)
-                                        } else {
-                                            selectedDiets.insert(diet)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 8)
-                        
-                        // MARK: - Nutritional Requirements Section
-                        SectionHeaderView(title: "Nutritional Requirements", icon: "heart")
-                        
-                        VStack(spacing: 8) {
-                            ForEach(nutritionOptions, id: \.self) { option in
-                                MultiSelectionOptionView(
-                                    option: option,
-                                    title: option,
-                                    isSelected: selectedNutrition.contains(option),
-                                    action: { option in
-                                        if selectedNutrition.contains(option) {
-                                            selectedNutrition.remove(option)
-                                        } else {
-                                            selectedNutrition.insert(option)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.bottom, 24)
-                        
-                        // MARK: - Next Button
-                        Button(action: {
-                            // TODO: Navigate to recipe generation screen
-                        }) {
-                            HStack {
-                                Text("Generate Recipes")
-                                    .font(Theme.Typography.title3)
-                                
-                                Image(systemName: "arrow.right")
-                                    .font(.headline)
-                            }
-                        }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        .padding(.bottom, 32)
                     }
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    .padding(.bottom, 24)
                 }
+                
+                // Navigation buttons
+                HStack(spacing: 16) {
+                    // Back button (not shown on first section)
+                    if currentSection != .ingredients {
+                        NavigationButtonView(
+                            title: "Back",
+                            icon: "chevron.left",
+                            action: goToPreviousSection,
+                            isPrimary: false
+                        )
+                    }
+                    
+                    // Next/Generate button
+                    NavigationButtonView(
+                        title: currentSection == .nutritionalRequirements ? "Recipify" : "Next",
+                        icon: currentSection == .nutritionalRequirements ? "arrow.right" : "chevron.right",
+                        action: goToNextSection,
+                        isPrimary: true
+                    )
+                }
+                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                .padding(.bottom, 24)
             }
             .padding(.bottom)
             .navigationBarTitleDisplayMode(.inline)
@@ -466,6 +460,199 @@ struct ManageIngredients: View {
                             .animation(.easeInOut, value: isDarkMode)
                     }
                 }
+            }
+        }
+    }
+    
+    // MARK: - Navigation Functions
+    
+    func goToNextSection() {
+        if currentSection == .nutritionalRequirements {
+            // TODO: Navigate to recipe generation screen
+            return
+        }
+        
+        withAnimation {
+            currentSection = SurveySection(rawValue: currentSection.rawValue + 1) ?? .ingredients
+        }
+    }
+    
+    func goToPreviousSection() {
+        withAnimation {
+            currentSection = SurveySection(rawValue: currentSection.rawValue - 1) ?? .ingredients
+        }
+    }
+    
+    // MARK: - Section Views
+    
+    // Ingredients Section
+    var ingredientsSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(identifiedIngredients, id: \.self) { ingredient in
+                IngredientItemView(
+                    ingredient: ingredient,
+                    isSelected: selectedIngredients.contains(ingredient),
+                    onToggle: {
+                        if selectedIngredients.contains(ingredient) {
+                            selectedIngredients.removeAll { $0 == ingredient }
+                        } else {
+                            selectedIngredients.append(ingredient)
+                        }
+                    },
+                    onRemove: {
+                        identifiedIngredients.removeAll { $0 == ingredient }
+                        selectedIngredients.removeAll { $0 == ingredient }
+                    }
+                )
+            }
+            
+            // Add new ingredient
+            HStack {
+                TextField("Add ingredient", text: $newIngredient)
+                    .font(Theme.Typography.callout)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                            .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
+                    )
+                
+                Button(action: {
+                    if !newIngredient.isEmpty && !identifiedIngredients.contains(newIngredient) {
+                        identifiedIngredients.append(newIngredient)
+                        selectedIngredients.append(newIngredient)
+                        newIngredient = ""
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(Theme.Colors.primary)
+                }
+                .disabled(newIngredient.isEmpty)
+                .opacity(newIngredient.isEmpty ? 0.5 : 1)
+            }
+        }
+    }
+    
+    // Meal Type Section
+    var mealTypeSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(mealTypes, id: \.self) { mealType in
+                SingleSelectionOptionView(
+                    option: mealType,
+                    title: mealType,
+                    isSelected: selectedMealType == mealType,
+                    action: { selectedMealType = $0 }
+                )
+            }
+        }
+    }
+    
+    // Skill Level Section
+    var skillLevelSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(skillLevels, id: \.self) { level in
+                SingleSelectionOptionView(
+                    option: level,
+                    title: level,
+                    isSelected: selectedSkillLevel == level,
+                    action: { selectedSkillLevel = $0 }
+                )
+            }
+        }
+    }
+    
+    // Cook Time Section
+    var cookTimeSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(cookTimes, id: \.self) { time in
+                SingleSelectionOptionView(
+                    option: time,
+                    title: time,
+                    isSelected: selectedCookTime == time,
+                    action: { selectedCookTime = $0 }
+                )
+            }
+        }
+    }
+    
+    // Cuisine Types Section
+    var cuisineTypesSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(cuisines, id: \.self) { cuisine in
+                MultiSelectionOptionView(
+                    option: cuisine,
+                    title: cuisine,
+                    isSelected: selectedCuisines.contains(cuisine),
+                    action: { cuisine in
+                        if selectedCuisines.contains(cuisine) {
+                            selectedCuisines.remove(cuisine)
+                        } else {
+                            selectedCuisines.insert(cuisine)
+                        }
+                    }
+                )
+            }
+        }
+    }
+    
+    // Allergies Section
+    var allergiesSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(allergies, id: \.self) { allergy in
+                MultiSelectionOptionView(
+                    option: allergy,
+                    title: allergy,
+                    isSelected: selectedAllergies.contains(allergy),
+                    action: { allergy in
+                        if selectedAllergies.contains(allergy) {
+                            selectedAllergies.remove(allergy)
+                        } else {
+                            selectedAllergies.insert(allergy)
+                        }
+                    }
+                )
+            }
+        }
+    }
+    
+    // Dietary Restrictions Section
+    var dietaryRestrictionsSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(diets, id: \.self) { diet in
+                MultiSelectionOptionView(
+                    option: diet,
+                    title: diet,
+                    isSelected: selectedDiets.contains(diet),
+                    action: { diet in
+                        if selectedDiets.contains(diet) {
+                            selectedDiets.remove(diet)
+                        } else {
+                            selectedDiets.insert(diet)
+                        }
+                    }
+                )
+            }
+        }
+    }
+    
+    // Nutritional Requirements Section
+    var nutritionalRequirementsSectionView: some View {
+        VStack(spacing: 8) {
+            ForEach(nutritionOptions, id: \.self) { option in
+                MultiSelectionOptionView(
+                    option: option,
+                    title: option,
+                    isSelected: selectedNutrition.contains(option),
+                    action: { option in
+                        if selectedNutrition.contains(option) {
+                            selectedNutrition.remove(option)
+                        } else {
+                            selectedNutrition.insert(option)
+                        }
+                    }
+                )
             }
         }
     }
