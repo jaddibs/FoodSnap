@@ -113,7 +113,6 @@ struct IngredientItemView: View {
     let ingredient: String
     let isSelected: Bool
     let onToggle: () -> Void
-    let onRemove: () -> Void
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
@@ -138,11 +137,6 @@ struct IngredientItemView: View {
                     .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
                     .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
             )
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive, action: onRemove) {
-                Label("Remove", systemImage: "trash")
-            }
         }
     }
 }
@@ -261,7 +255,7 @@ enum SurveySection: Int, CaseIterable {
     
     var description: String {
         switch self {
-        case .ingredients: return "These are the analyzed ingredients, add or remove ingredients for your recipe."
+        case .ingredients: return "These are the analyzed ingredients, add or select/deselect ingredients for your recipe."
         case .mealType: return "What type of meal would you like to make?"
         case .skillLevel: return "What's your cooking experience level?"
         case .cookTime: return "How much time do you have for cooking?"
@@ -287,10 +281,10 @@ struct ManageIngredients: View {
     @State private var newIngredient = ""
     
     // Preferences
-    @State private var selectedMealType: String = "Main Course"
+    @State private var selectedMealType: String? = nil
     @State private var selectedMealTime: String? = nil
-    @State private var selectedSkillLevel: String = "Intermediate"
-    @State private var selectedCookTime: String = "30-60 minutes"
+    @State private var selectedSkillLevel: String? = nil
+    @State private var selectedCookTime: String? = nil
     @State private var selectedCuisines: Set<String> = []
     @State private var selectedAllergies: Set<String> = []
     @State private var selectedDiets: Set<String> = []
@@ -299,13 +293,13 @@ struct ManageIngredients: View {
     // Options
     let mealTimes = ["Breakfast", "Lunch", "Dinner", "Snack"]
     let mealOptions = [
-        "Breakfast": ["Cereal", "Pancakes", "Eggs & Toast", "Smoothie Bowl", "Oatmeal"],
-        "Lunch": ["Sandwich", "Salad", "Soup", "Wrap", "Bowl"],
-        "Dinner": ["Appetizer", "Main Course", "Side Dish", "Dessert"],
-        "Snack": ["Sweet", "Savory", "Healthy", "Indulgent"]
+        "Breakfast": ["No preference", "Cereal", "Pancakes", "Eggs & Toast", "Smoothie Bowl", "Oatmeal"],
+        "Lunch": ["No preference", "Sandwich", "Salad", "Soup", "Wrap", "Bowl"],
+        "Dinner": ["No preference", "Appetizer", "Main Course", "Side Dish", "Dessert"],
+        "Snack": ["No preference", "Sweet", "Savory", "Healthy", "Indulgent"]
     ]
     let skillLevels = ["Beginner", "Intermediate", "Advanced"]
-    let cookTimes = ["Under 15 minutes", "15-30 minutes", "30-60 minutes", "Over 60 minutes"]
+    let cookTimes = ["No preference", "Under 15 minutes", "15-30 minutes", "30-60 minutes", "Over 60 minutes"]
     let cuisines = ["Italian", "Mexican", "Asian", "Mediterranean", "American", "Indian", "French", "Middle Eastern"]
     let allergies = ["Dairy", "Eggs", "Nuts", "Shellfish", "Wheat", "Soy"]
     let diets = ["Vegetarian", "Vegan", "Pescatarian", "Keto", "Paleo", "Low Carb", "Gluten Free"]
@@ -437,6 +431,8 @@ struct ManageIngredients: View {
                         action: goToNextSection,
                         isPrimary: true
                     )
+                    .disabled(!canProceedToNextSection)
+                    .opacity(canProceedToNextSection ? 1.0 : 0.7)
                 }
                 .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                 .padding(.bottom, 24)
@@ -479,21 +475,14 @@ struct ManageIngredients: View {
     // MARK: - Navigation Functions
     
     func goToNextSection() {
-        if currentSection == .nutritionalRequirements {
-            // TODO: Navigate to recipe generation screen
+        // First check if we can proceed
+        if !canProceedToNextSection {
             return
         }
         
-        // For Meal Type section, ensure a meal time and type are selected
-        if currentSection == .mealType && (selectedMealTime == nil || selectedMealType.isEmpty) {
-            // If no meal time is selected, select the first one by default
-            if selectedMealTime == nil {
-                selectedMealTime = mealTimes.first
-                // Select the first meal option by default if available
-                if let mealTime = selectedMealTime, let options = mealOptions[mealTime], !options.isEmpty {
-                    selectedMealType = options.first ?? ""
-                }
-            }
+        if currentSection == .nutritionalRequirements {
+            // TODO: Navigate to recipe generation screen
+            return
         }
         
         withAnimation {
@@ -507,18 +496,32 @@ struct ManageIngredients: View {
         }
     }
     
+    // Computed property to check if can proceed to next section
+    var canProceedToNextSection: Bool {
+        switch currentSection {
+        case .ingredients:
+            // Can always proceed from ingredients as long as at least one is selected
+            return !selectedIngredients.isEmpty
+        case .mealType:
+            // Need both meal time and meal type selected
+            return selectedMealTime != nil && selectedMealType != nil
+        case .skillLevel:
+            // Need skill level selected
+            return selectedSkillLevel != nil
+        case .cookTime:
+            // Need cook time selected
+            return selectedCookTime != nil
+        default:
+            // Other sections don't require selection
+            return true
+        }
+    }
+    
     // MARK: - Section Views
     
     // Ingredients Section
     var ingredientsSectionView: some View {
         VStack(spacing: 12) {
-            // Instructions text for how to use the interface
-            Text("Tap an ingredient to toggle selection. Swipe left to remove.")
-                .font(Theme.Typography.footnote)
-                .foregroundColor(Theme.Colors.secondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 4)
-            
             ForEach(identifiedIngredients, id: \.self) { ingredient in
                 IngredientItemView(
                     ingredient: ingredient,
@@ -529,10 +532,6 @@ struct ManageIngredients: View {
                         } else {
                             selectedIngredients.append(ingredient)
                         }
-                    },
-                    onRemove: {
-                        identifiedIngredients.removeAll { $0 == ingredient }
-                        selectedIngredients.removeAll { $0 == ingredient }
                     }
                 )
             }
