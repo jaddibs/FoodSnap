@@ -354,26 +354,13 @@ struct ManageIngredients: View {
                     .background(Color.gray.opacity(0.2))
                     .padding(.bottom, 12)
                 
-                // Section Header
-                HStack {
-                    Image(systemName: currentSection.icon)
-                        .font(.system(size: 22))
-                        .foregroundColor(Theme.Colors.primary)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(currentSection.title)
-                            .font(Theme.Typography.title2)
-                            .foregroundColor(Theme.Colors.text)
-                            
-                        Text(currentSection.description)
-                            .font(Theme.Typography.callout)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                .padding(.bottom, 12)
+                // App description
+                Text("Review identified ingredients and set preferences")
+                    .font(Theme.Typography.callout)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    .padding(.bottom, 16)
                 
                 // Progress indicator
                 ProgressIndicatorView(currentStep: currentSection.rawValue, totalSteps: SurveySection.allCases.count)
@@ -383,6 +370,26 @@ struct ManageIngredients: View {
                 // Main content area - survey section content
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
+                        // Section Header
+                        HStack {
+                            Image(systemName: currentSection.icon)
+                                .font(.system(size: 22))
+                                .foregroundColor(Theme.Colors.primary)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(currentSection.title)
+                                    .font(Theme.Typography.title2)
+                                    .foregroundColor(Theme.Colors.text)
+                                    
+                                Text(currentSection.description)
+                                    .font(Theme.Typography.callout)
+                                    .foregroundColor(Theme.Colors.secondaryText)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.bottom, 12)
+                        
                         switch currentSection {
                         case .ingredients:
                             ingredientsSectionView
