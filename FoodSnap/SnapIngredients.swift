@@ -19,7 +19,7 @@ class GeminiService {
     private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     
     func analyzeImages(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
-        // TEMPORARY HARDCODED FALLBACK - This guarantees we always have ingredients
+        // TEMPORARY HARDCODED FALLBACK - This guarantees we always have ingredients for error cases
         let fallbackIngredients = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]
         
         guard let apiKey = loadAPIKey() else {
@@ -116,7 +116,14 @@ class GeminiService {
                         
                         print("🔍 Text from API: \(text)")
                         
-                        // First try: Direct JSON parsing
+                        // First try: Direct JSON parsing - specifically recognize empty arrays []
+                        if text.trimmingCharacters(in: .whitespacesAndNewlines) == "[]" {
+                            print("✅ Detected empty JSON array - no ingredients found")
+                            returnResult(.success([]))
+                            return
+                        }
+                        
+                        // Next try: Parse JSON array
                         if let regex = try? NSRegularExpression(pattern: "\\[.*?\\]", options: .dotMatchesLineSeparators),
                            let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) {
                             let jsonText = (text as NSString).substring(with: match.range)
@@ -125,6 +132,7 @@ class GeminiService {
                                 let jsonData = jsonText.data(using: .utf8)!
                                 let ingredients = try JSONDecoder().decode([String].self, from: jsonData)
                                 print("✅ Successfully parsed JSON: \(ingredients)")
+                                // Return empty array as-is, don't replace with fallback
                                 returnResult(.success(ingredients))
                                 return
                             } catch {
@@ -135,11 +143,10 @@ class GeminiService {
                         
                         // Second try: Basic text extraction
                         let extractedIngredients = self.extractIngredientsFromText(text)
-                        if !extractedIngredients.isEmpty {
-                            print("✅ Extracted ingredients from text: \(extractedIngredients)")
-                            returnResult(.success(extractedIngredients))
-                            return
-                        }
+                        // Don't replace empty extracted arrays
+                        print("✅ Extracted ingredients from text: \(extractedIngredients)")
+                        returnResult(.success(extractedIngredients))
+                        return
                     }
                 }
                 
@@ -330,6 +337,7 @@ struct SnapIngredients: View {
     @State private var analyzedIngredients: [String] = []
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    @State private var showNoIngredientsAlert = false
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("isDarkMode") private var isDarkMode = false
     @Environment(\.presentationMode) var presentationMode
@@ -572,6 +580,11 @@ struct SnapIngredients: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .alert("No Ingredients Detected", isPresented: $showNoIngredientsAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("We couldn't identify any ingredients in your photo. Please try taking a clearer picture with better lighting, or use a different photo.")
+        }
         .background(
             // Use background to place NavigationLink here instead of in the view hierarchy
             NavigationLink(
@@ -625,10 +638,15 @@ struct SnapIngredients: View {
                 case .success(let ingredients):
                     print("*** SUCCESS! Found \(ingredients.count) ingredients: \(ingredients) ***")
                     
+                    // Check if any ingredients were detected
+                    if ingredients.isEmpty {
+                        print("⚠️ No ingredients detected - showing alert")
+                        self.showNoIngredientsAlert = true
+                        return
+                    }
+                    
                     // Update ingredients
-                    self.analyzedIngredients = ingredients.isEmpty ? 
-                        ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"] : 
-                        ingredients
+                    self.analyzedIngredients = ingredients
                     
                     print("*** Updated analyzedIngredients, now forcing navigation ***")
                     
