@@ -275,6 +275,9 @@ struct ManageIngredients: View {
     // Current section in the survey
     @State private var currentSection: SurveySection = .ingredients
     
+    // Navigation state
+    @State private var navigateToRecipeResults = false
+    
     // Sample data - would be populated from analysis in real implementation
     @State private var identifiedIngredients: [String]
     @State private var selectedIngredients: [String]
@@ -440,6 +443,18 @@ struct ManageIngredients: View {
             .padding(.bottom)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $navigateToRecipeResults) {
+                RecipeResults(
+                    ingredients: selectedIngredients,
+                    mealType: selectedMealType,
+                    skillLevel: selectedSkillLevel,
+                    cookTime: selectedCookTime,
+                    cuisines: Array(selectedCuisines),
+                    allergies: Array(selectedAllergies),
+                    dietaryRestrictions: Array(selectedDiets),
+                    nutritionalRequirements: Array(selectedNutrition)
+                )
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 8) {
@@ -481,7 +496,8 @@ struct ManageIngredients: View {
         }
         
         if currentSection == .nutritionalRequirements {
-            // TODO: Navigate to recipe generation screen
+            // Navigate to recipe generation screen
+            navigateToRecipeResults = true
             return
         }
         
