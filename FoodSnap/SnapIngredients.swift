@@ -308,14 +308,9 @@ struct SnapIngredients: View {
         } message: {
             Text("We couldn't identify any ingredients in your photo. Please try taking a clearer picture with better lighting, or use a different photo.")
         }
-        .background(
-            // Use background to place NavigationLink here instead of in the view hierarchy
-            NavigationLink(
-                destination: ManageIngredients(identifiedIngredients: analyzedIngredients),
-                isActive: $navigateToManageIngredients,
-                label: { EmptyView() }
-            )
-        )
+        .navigationDestination(isPresented: $navigateToManageIngredients) {
+            ManageIngredients(identifiedIngredients: analyzedIngredients)
+        }
         .onAppear {
             print("SnapIngredients view appeared")
         }

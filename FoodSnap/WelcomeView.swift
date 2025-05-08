@@ -6,7 +6,7 @@ struct WelcomeView: View {
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 Theme.Colors.background
                     .ignoresSafeArea()
@@ -64,22 +64,23 @@ struct WelcomeView: View {
                     Spacer()
                     
                     // Get Started Button
-                    NavigationLink(destination: SnapIngredients(), isActive: $navigateToSnapIngredients) {
-                        Button(action: {
-                            navigateToSnapIngredients = true
-                        }) {
-                            HStack {
-                                Text("Get Started!")
-                                    .font(Theme.Typography.title3)
-                            }
+                    Button(action: {
+                        navigateToSnapIngredients = true
+                    }) {
+                        HStack {
+                            Text("Get Started!")
+                                .font(Theme.Typography.title3)
                         }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        .padding(.vertical, 30)
                     }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    .padding(.vertical, 30)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $navigateToSnapIngredients) {
+                SnapIngredients()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     HStack(spacing: 8) {

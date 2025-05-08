@@ -117,35 +117,33 @@ struct IngredientItemView: View {
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        HStack {
-            Button(action: onToggle) {
-                HStack {
-                    Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                        .font(.system(size: 18))
-                        .foregroundColor(isSelected ? Theme.Colors.primary : Theme.Colors.secondaryText)
-                    
-                    Text(ingredient)
-                        .font(Theme.Typography.callout)
-                        .foregroundColor(Theme.Colors.text)
-                        .strikethrough(!isSelected, color: Theme.Colors.secondaryText)
-                }
-            }
-            
-            Spacer()
-            
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
+        Button(action: onToggle) {
+            HStack {
+                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                     .font(.system(size: 18))
-                    .foregroundColor(Theme.Colors.secondaryText)
+                    .foregroundColor(isSelected ? Theme.Colors.primary : Theme.Colors.secondaryText)
+                
+                Text(ingredient)
+                    .font(Theme.Typography.callout)
+                    .foregroundColor(Theme.Colors.text)
+                    .strikethrough(!isSelected, color: Theme.Colors.secondaryText)
+                
+                Spacer()
+            }
+            .contentShape(Rectangle())
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
+                    .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
+            )
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive, action: onRemove) {
+                Label("Remove", systemImage: "trash")
             }
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 16)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius)
-                .fill(colorScheme == .dark ? Color.black.opacity(0.2) : Color.white)
-                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 4, x: 0, y: 2)
-        )
     }
 }
 
@@ -290,6 +288,7 @@ struct ManageIngredients: View {
     
     // Preferences
     @State private var selectedMealType: String = "Main Course"
+    @State private var selectedMealTime: String? = nil
     @State private var selectedSkillLevel: String = "Intermediate"
     @State private var selectedCookTime: String = "30-60 minutes"
     @State private var selectedCuisines: Set<String> = []
@@ -298,7 +297,13 @@ struct ManageIngredients: View {
     @State private var selectedNutrition: Set<String> = []
     
     // Options
-    let mealTypes = ["Breakfast", "Lunch", "Dinner", "Appetizer", "Main Course", "Side Dish", "Dessert"]
+    let mealTimes = ["Breakfast", "Lunch", "Dinner", "Snack"]
+    let mealOptions = [
+        "Breakfast": ["Cereal", "Pancakes", "Eggs & Toast", "Smoothie Bowl", "Oatmeal"],
+        "Lunch": ["Sandwich", "Salad", "Soup", "Wrap", "Bowl"],
+        "Dinner": ["Appetizer", "Main Course", "Side Dish", "Dessert"],
+        "Snack": ["Sweet", "Savory", "Healthy", "Indulgent"]
+    ]
     let skillLevels = ["Beginner", "Intermediate", "Advanced"]
     let cookTimes = ["Under 15 minutes", "15-30 minutes", "30-60 minutes", "Over 60 minutes"]
     let cuisines = ["Italian", "Mexican", "Asian", "Mediterranean", "American", "Indian", "French", "Middle Eastern"]
@@ -479,6 +484,18 @@ struct ManageIngredients: View {
             return
         }
         
+        // For Meal Type section, ensure a meal time and type are selected
+        if currentSection == .mealType && (selectedMealTime == nil || selectedMealType.isEmpty) {
+            // If no meal time is selected, select the first one by default
+            if selectedMealTime == nil {
+                selectedMealTime = mealTimes.first
+                // Select the first meal option by default if available
+                if let mealTime = selectedMealTime, let options = mealOptions[mealTime], !options.isEmpty {
+                    selectedMealType = options.first ?? ""
+                }
+            }
+        }
+        
         withAnimation {
             currentSection = SurveySection(rawValue: currentSection.rawValue + 1) ?? .ingredients
         }
@@ -494,7 +511,14 @@ struct ManageIngredients: View {
     
     // Ingredients Section
     var ingredientsSectionView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
+            // Instructions text for how to use the interface
+            Text("Tap an ingredient to toggle selection. Swipe left to remove.")
+                .font(Theme.Typography.footnote)
+                .foregroundColor(Theme.Colors.secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 4)
+            
             ForEach(identifiedIngredients, id: \.self) { ingredient in
                 IngredientItemView(
                     ingredient: ingredient,
@@ -545,13 +569,47 @@ struct ManageIngredients: View {
     // Meal Type Section
     var mealTypeSectionView: some View {
         VStack(spacing: 8) {
-            ForEach(mealTypes, id: \.self) { mealType in
-                SingleSelectionOptionView(
-                    option: mealType,
-                    title: mealType,
-                    isSelected: selectedMealType == mealType,
-                    action: { selectedMealType = $0 }
-                )
+            ForEach(mealTimes, id: \.self) { mealTime in
+                VStack(spacing: 0) {
+                    SingleSelectionOptionView(
+                        option: mealTime,
+                        title: mealTime,
+                        isSelected: selectedMealTime == mealTime,
+                        action: { selectedMealTime = $0 }
+                    )
+                    
+                    if selectedMealTime == mealTime, let options = mealOptions[mealTime] {
+                        // Connector line
+                        Rectangle()
+                            .fill(Theme.Colors.primary.opacity(0.5))
+                            .frame(width: 2)
+                            .frame(height: 8)
+                            .padding(.leading, 16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 2)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(options, id: \.self) { option in
+                                HStack(spacing: 0) {
+                                    // Connector line
+                                    Rectangle()
+                                        .fill(Theme.Colors.primary.opacity(0.5))
+                                        .frame(width: 2, height: 12)
+                                        .padding(.horizontal, 7)
+                                        
+                                    SingleSelectionOptionView(
+                                        option: option,
+                                        title: option,
+                                        isSelected: selectedMealType == option,
+                                        action: { selectedMealType = $0 }
+                                    )
+                                }
+                            }
+                        }
+                        .padding(.bottom, 8)
+                        .transition(.opacity)
+                    }
+                }
             }
         }
     }

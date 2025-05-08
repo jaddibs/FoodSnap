@@ -30,7 +30,7 @@ class GeminiService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         // Create the multimodal prompt
-        var requestBody: [String: Any] = [
+        let requestBody: [String: Any] = [
             "contents": [
                 [
                     "role": "user",
