@@ -155,8 +155,8 @@ struct ManageIngredients: View {
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Sample data - would be populated from analysis in real implementation
-    @State private var identifiedIngredients = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]
-    @State private var selectedIngredients = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]
+    @State private var identifiedIngredients: [String]
+    @State private var selectedIngredients: [String]
     @State private var newIngredient = ""
     
     // Preferences
@@ -167,6 +167,12 @@ struct ManageIngredients: View {
     @State private var selectedAllergies: Set<String> = []
     @State private var selectedDiets: Set<String> = []
     @State private var selectedNutrition: Set<String> = []
+    
+    // Initialize with ingredients from Gemini analysis
+    init(identifiedIngredients: [String] = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]) {
+        _identifiedIngredients = State(initialValue: identifiedIngredients)
+        _selectedIngredients = State(initialValue: identifiedIngredients)
+    }
     
     // Options
     let mealTypes = ["Breakfast", "Lunch", "Dinner", "Appetizer", "Main Course", "Side Dish", "Dessert"]
