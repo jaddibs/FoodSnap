@@ -11,7 +11,9 @@ import Foundation
 
 // MARK: - Gemini API Service
 class GeminiService {
-    private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    private let baseURL = "https://generativelanguage.googleapis.com/v1beta/models"
+    private let imageAnalysisModel = "gemini-2.0-flash"
+    private let recipeGenerationModel = "gemini-1.5-pro"
     
     func analyzeImages(_ images: [UIImage], completion: @escaping (Result<[String], Error>) -> Void) {
         // TEMPORARY HARDCODED FALLBACK - This guarantees we always have ingredients for error cases
@@ -24,7 +26,7 @@ class GeminiService {
             return
         }
         
-        let url = URL(string: "\(baseURL)?key=\(apiKey)")!
+        let url = URL(string: "\(baseURL)/\(imageAnalysisModel):generateContent?key=\(apiKey)")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -138,16 +140,16 @@ class GeminiService {
                         
                         // Second try: Basic text extraction
                         let extractedIngredients = self.extractIngredientsFromText(text)
-                        // Don't replace empty extracted arrays
-                        print("✅ Extracted ingredients from text: \(extractedIngredients)")
+                        print("✅ Extracted ingredients via text parsing: \(extractedIngredients)")
                         returnResult(.success(extractedIngredients))
                         return
                     }
                 }
                 
-                // If we reach here, all parsing attempts failed
-                print("⚠️ Could not extract ingredients - using fallback")
+                // If we got here, something went wrong with parsing
+                print("⚠️ Failed to parse response - using fallback ingredients")
                 returnResult(.success(fallbackIngredients))
+                
             } catch {
                 print("⚠️ JSON parsing error: \(error.localizedDescription)")
                 returnResult(.success(fallbackIngredients))
@@ -155,12 +157,538 @@ class GeminiService {
         }.resume()
     }
     
-    // Improved extraction function
+    // MARK: - Recipe Generation
+    
+    func generateRecipe(
+        ingredients: [String],
+        mealType: String?,
+        skillLevel: String?,
+        cookTime: String?,
+        cuisines: [String],
+        allergies: [String],
+        dietaryRestrictions: [String],
+        nutritionalRequirements: [String],
+        completion: @escaping (Result<Recipe, Error>) -> Void
+    ) {
+        guard let apiKey = loadAPIKey() else {
+            print("⚠️ API Key not found - using fallback recipe")
+            completion(.success(Recipe.placeholder))
+            return
+        }
+        
+        let url = URL(string: "\(baseURL)/\(recipeGenerationModel):generateContent?key=\(apiKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Create the prompt for recipe generation
+        let requestBody: [String: Any] = [
+            "contents": [
+                [
+                    "role": "user",
+                    "parts": [
+                        [
+                            "text": createRecipePrompt(
+                                ingredients: ingredients,
+                                mealType: mealType,
+                                skillLevel: skillLevel,
+                                cookTime: cookTime,
+                                cuisines: cuisines,
+                                allergies: allergies,
+                                dietaryRestrictions: dietaryRestrictions,
+                                nutritionalRequirements: nutritionalRequirements
+                            )
+                        ]
+                    ]
+                ]
+            ],
+            "generationConfig": [
+                "temperature": 0.7,
+                "topP": 0.95,
+                "topK": 40,
+                "maxOutputTokens": 2048
+            ]
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            print("⚠️ Error serializing request: \(error.localizedDescription)")
+            completion(.success(Recipe.placeholder))
+            return
+        }
+        
+        print("📤 Sending recipe generation request")
+        
+        // Set a longer timeout for recipe generation
+        let session = URLSession(configuration: {
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 30.0
+            return config
+        }())
+        
+        session.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else { return }
+            
+            // Always return to main thread for completion handler
+            let returnResult: (Result<Recipe, Error>) -> Void = { result in
+                DispatchQueue.main.async {
+                    completion(result)
+                }
+            }
+            
+            // Handle network errors
+            if let error = error {
+                print("⚠️ Network error: \(error.localizedDescription)")
+                returnResult(.success(Recipe.placeholder))
+                return
+            }
+            
+            // Handle missing data
+            guard let data = data else {
+                print("⚠️ No data received from API")
+                returnResult(.success(Recipe.placeholder))
+                return
+            }
+            
+            // Print raw response for debugging
+            let responseString = String(data: data, encoding: .utf8) ?? "Unable to decode"
+            print("📥 Raw response (\(data.count) bytes): \(responseString.prefix(200))...")
+            
+            // Try parsing the JSON response
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    // Check for API errors
+                    if let error = json["error"] as? [String: Any],
+                       let message = error["message"] as? String {
+                        print("🚫 API Error: \(message)")
+                        returnResult(.success(Recipe.placeholder))
+                        return
+                    }
+                    
+                    // Extract the recipe text and image
+                    if let candidates = json["candidates"] as? [[String: Any]],
+                       let firstCandidate = candidates.first,
+                       let content = firstCandidate["content"] as? [String: Any],
+                       let parts = content["parts"] as? [[String: Any]] {
+                        
+                        var recipeText = ""
+                        
+                        // Extract text and image parts
+                        for part in parts {
+                            if let text = part["text"] as? String {
+                                recipeText += text
+                            }
+                            
+                            if let inlineData = part["inlineData"] as? [String: Any],
+                               let data = inlineData["data"] as? String {
+                                // This is the base64 image data
+                                if let imageData = Data(base64Encoded: data) {
+                                    // Generate a recipe with the image data
+                                    if let recipe = self.parseRecipeFromText(recipeText, imageData: imageData) {
+                                        returnResult(.success(recipe))
+                                        return
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If we got here, we have text but no image
+                        if !recipeText.isEmpty {
+                            if let recipe = self.parseRecipeFromText(recipeText) {
+                                // Generate the image separately
+                                self.generateRecipeImage(for: recipe) { updatedRecipe in
+                                    returnResult(.success(updatedRecipe))
+                                }
+                                return
+                            }
+                        }
+                    }
+                }
+                
+                // If we got here, something went wrong with parsing
+                print("⚠️ Failed to parse recipe response - using fallback recipe")
+                returnResult(.success(Recipe.placeholder))
+                
+            } catch {
+                print("⚠️ JSON parsing error: \(error.localizedDescription)")
+                returnResult(.success(Recipe.placeholder))
+            }
+        }.resume()
+    }
+    
+    // Generate an image for a recipe if one wasn't provided
+    private func generateRecipeImage(for recipe: Recipe, completion: @escaping (Recipe) -> Void) {
+        guard let apiKey = loadAPIKey() else {
+            print("⚠️ API Key not found - using recipe without image")
+            completion(recipe)
+            return
+        }
+        
+        let url = URL(string: "\(baseURL)/\(recipeGenerationModel):generateContent?key=\(apiKey)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Create a detailed prompt for image generation using the recipe details
+        let imagePrompt = """
+        Generate a beautiful, appetizing food photography image of this dish:
+        
+        Title: \(recipe.title)
+        
+        \(recipe.description ?? "A delicious dish with fresh ingredients arranged beautifully.")
+        
+        The image should be high quality, well-lit, professional food photography style, and showcase the dish in an appealing way.
+        """
+        
+        // Create the prompt for image generation
+        let requestBody: [String: Any] = [
+            "contents": [
+                [
+                    "role": "user",
+                    "parts": [
+                        [
+                            "text": imagePrompt
+                        ]
+                    ]
+                ]
+            ],
+            "generationConfig": [
+                "temperature": 0.4,
+                "topP": 0.95,
+                "topK": 32
+            ]
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            print("⚠️ Error serializing image request: \(error.localizedDescription)")
+            completion(recipe)
+            return
+        }
+        
+        print("📤 Sending recipe image generation request")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            // Always return to main thread for completion handler
+            let returnResult: (Recipe) -> Void = { recipe in
+                DispatchQueue.main.async {
+                    completion(recipe)
+                }
+            }
+            
+            // Handle network errors
+            if let error = error {
+                print("⚠️ Network error for image: \(error.localizedDescription)")
+                returnResult(recipe)
+                return
+            }
+            
+            // Handle missing data
+            guard let data = data else {
+                print("⚠️ No data received from API for image")
+                returnResult(recipe)
+                return
+            }
+            
+            // Try parsing the JSON response
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let candidates = json["candidates"] as? [[String: Any]],
+                   let firstCandidate = candidates.first,
+                   let content = firstCandidate["content"] as? [String: Any],
+                   let parts = content["parts"] as? [[String: Any]] {
+                    
+                    // Look for the image part
+                    for part in parts {
+                        if let inlineData = part["inlineData"] as? [String: Any],
+                           let data = inlineData["data"] as? String,
+                           let imageData = Data(base64Encoded: data) {
+                            
+                            // Create a new recipe with the image data
+                            var updatedRecipe = recipe
+                            updatedRecipe.imageData = imageData
+                            
+                            returnResult(updatedRecipe)
+                            return
+                        }
+                    }
+                }
+                
+                // If we got here, no image was found
+                print("⚠️ No image found in response")
+                returnResult(recipe)
+                
+            } catch {
+                print("⚠️ JSON parsing error for image: \(error.localizedDescription)")
+                returnResult(recipe)
+            }
+        }.resume()
+    }
+    
+    // Parse recipe from text response
+    private func parseRecipeFromText(_ text: String, imageData: Data? = nil) -> Recipe? {
+        print("Parsing recipe from text: \(text.prefix(100))...")
+        
+        // Try to extract structured data from the text
+        var title = "Delicious Recipe"
+        var cookTime = "30 min"
+        var difficulty = "Medium"
+        var servings = 4
+        var ingredients: [String] = []
+        var instructions: [String] = []
+        var description: String? = "A delicious dish made with fresh ingredients."
+        
+        // Extract title - usually the first line
+        let lines = text.components(separatedBy: .newlines)
+        if !lines.isEmpty {
+            let potentialTitle = lines[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            if !potentialTitle.isEmpty && !potentialTitle.lowercased().contains("json") {
+                title = potentialTitle
+            }
+        }
+        
+        // Try to extract JSON if present
+        if let jsonStart = text.range(of: "{"),
+           let jsonEnd = text.range(of: "}", options: .backwards) {
+            let jsonSubstring = text[jsonStart.lowerBound...jsonEnd.upperBound]
+            
+            do {
+                if let jsonData = String(jsonSubstring).data(using: .utf8),
+                   let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+                    
+                    if let jsonTitle = json["title"] as? String {
+                        title = jsonTitle
+                    }
+                    
+                    if let jsonCookTime = json["cookTime"] as? String {
+                        cookTime = jsonCookTime
+                    }
+                    
+                    if let jsonDifficulty = json["difficulty"] as? String {
+                        difficulty = jsonDifficulty
+                    }
+                    
+                    if let jsonServings = json["servings"] as? Int {
+                        servings = jsonServings
+                    }
+                    
+                    if let jsonIngredients = json["ingredients"] as? [String] {
+                        ingredients = jsonIngredients
+                    }
+                    
+                    if let jsonInstructions = json["instructions"] as? [String] {
+                        instructions = jsonInstructions
+                    }
+                    
+                    if let jsonDescription = json["description"] as? String {
+                        description = jsonDescription
+                    }
+                    
+                    return Recipe(
+                        title: title,
+                        cookTime: cookTime,
+                        difficulty: difficulty,
+                        servings: servings,
+                        ingredients: ingredients,
+                        instructions: instructions,
+                        description: description,
+                        imageData: imageData
+                    )
+                }
+            } catch {
+                print("Error parsing JSON: \(error)")
+                // Continue with text parsing
+            }
+        }
+        
+        // Fallback to text parsing
+        var inIngredientsSection = false
+        var inInstructionsSection = false
+        var inDescriptionSection = false
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine.isEmpty { continue }
+            
+            // Look for section headers
+            if trimmedLine.lowercased().contains("ingredient") {
+                inIngredientsSection = true
+                inInstructionsSection = false
+                inDescriptionSection = false
+                continue
+            } else if trimmedLine.lowercased().contains("instruction") || 
+                      trimmedLine.lowercased().contains("direction") ||
+                      trimmedLine.lowercased().contains("steps") {
+                inIngredientsSection = false
+                inInstructionsSection = true
+                inDescriptionSection = false
+                continue
+            } else if trimmedLine.lowercased().contains("description") ||
+                      trimmedLine.lowercased().contains("appearance") ||
+                      trimmedLine.lowercased().contains("looks like") {
+                inIngredientsSection = false
+                inInstructionsSection = false
+                inDescriptionSection = true
+                continue
+            }
+            
+            // Look for cook time
+            if trimmedLine.lowercased().contains("time") && trimmedLine.lowercased().contains("min") {
+                let timePattern = "\\d+\\s*(-\\s*\\d+)?\\s*(min|minutes)"
+                if let regex = try? NSRegularExpression(pattern: timePattern, options: []),
+                   let match = regex.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)) {
+                    cookTime = (trimmedLine as NSString).substring(with: match.range)
+                }
+            }
+            
+            // Look for difficulty
+            if trimmedLine.lowercased().contains("difficult") || 
+               trimmedLine.lowercased().contains("skill") || 
+               trimmedLine.lowercased().contains("level") {
+                for level in ["Easy", "Beginner", "Intermediate", "Medium", "Advanced", "Hard", "Difficult"] {
+                    if trimmedLine.contains(level) {
+                        difficulty = level
+                        break
+                    }
+                }
+            }
+            
+            // Look for servings
+            if trimmedLine.lowercased().contains("serv") {
+                if let regex = try? NSRegularExpression(pattern: "\\d+", options: []),
+                   let match = regex.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)) {
+                    if let servingCount = Int((trimmedLine as NSString).substring(with: match.range)) {
+                        servings = servingCount
+                    }
+                }
+            }
+            
+            // Process ingredients, instructions, and description
+            if inIngredientsSection {
+                // Clean up the ingredient line
+                let ingredient = trimmedLine
+                    .replacingOccurrences(of: "^[•\\-\\*\\d\\.\\)]+\\s*", with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                if !ingredient.isEmpty && !ingredient.lowercased().contains("ingredient") {
+                    ingredients.append(ingredient)
+                }
+            } else if inInstructionsSection {
+                // Clean up the instruction line
+                let instruction = trimmedLine
+                    .replacingOccurrences(of: "^[•\\-\\*\\d\\.\\)]+\\s*", with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                if !instruction.isEmpty && !instruction.lowercased().contains("instruction") && 
+                   !instruction.lowercased().contains("step") {
+                    instructions.append(instruction)
+                }
+            } else if inDescriptionSection {
+                // Add to description
+                if !trimmedLine.isEmpty && !trimmedLine.lowercased().contains("description") {
+                    if description == nil {
+                        description = trimmedLine
+                    } else {
+                        description! += " " + trimmedLine
+                    }
+                }
+            }
+        }
+        
+        // If we couldn't extract ingredients or instructions, use placeholders
+        if ingredients.isEmpty {
+            ingredients = Recipe.placeholder.ingredients
+        }
+        
+        if instructions.isEmpty {
+            instructions = Recipe.placeholder.instructions
+        }
+        
+        return Recipe(
+            title: title,
+            cookTime: cookTime,
+            difficulty: difficulty,
+            servings: servings,
+            ingredients: ingredients,
+            instructions: instructions,
+            description: description,
+            imageData: imageData
+        )
+    }
+    
+    // Create recipe prompt based on user preferences
+    private func createRecipePrompt(
+        ingredients: [String],
+        mealType: String?,
+        skillLevel: String?,
+        cookTime: String?,
+        cuisines: [String],
+        allergies: [String],
+        dietaryRestrictions: [String],
+        nutritionalRequirements: [String]
+    ) -> String {
+        var prompt = """
+        You are a professional chef. Generate a recipe using the following ingredients and preferences.
+        Also generate a vivid, detailed description of what the final dish looks like so I can visualize it.
+        
+        Return the recipe in JSON format with the following structure:
+        {
+          "title": "Recipe Title",
+          "cookTime": "30 min",
+          "difficulty": "Easy/Medium/Hard",
+          "servings": 4,
+          "ingredients": ["Ingredient 1 with quantity", "Ingredient 2 with quantity", ...],
+          "instructions": ["Step 1 with detailed instructions", "Step 2 with detailed instructions", ...],
+          "description": "A vivid, detailed description of what the final dish looks like"
+        }
+        
+        Available Ingredients:
+        \(ingredients.joined(separator: ", "))
+        
+        """
+        
+        if let mealType = mealType, !mealType.isEmpty {
+            prompt += "Meal Type: \(mealType)\n"
+        }
+        
+        if let skillLevel = skillLevel, !skillLevel.isEmpty {
+            prompt += "Skill Level: \(skillLevel)\n"
+        }
+        
+        if let cookTime = cookTime, !cookTime.isEmpty {
+            prompt += "Cook Time: \(cookTime)\n"
+        }
+        
+        if !cuisines.isEmpty {
+            prompt += "Preferred Cuisines: \(cuisines.joined(separator: ", "))\n"
+        }
+        
+        if !allergies.isEmpty {
+            prompt += "Allergies (avoid these): \(allergies.joined(separator: ", "))\n"
+        }
+        
+        if !dietaryRestrictions.isEmpty {
+            prompt += "Dietary Restrictions: \(dietaryRestrictions.joined(separator: ", "))\n"
+        }
+        
+        if !nutritionalRequirements.isEmpty {
+            prompt += "Nutritional Requirements: \(nutritionalRequirements.joined(separator: ", "))\n"
+        }
+        
+        prompt += "\nCreate a delicious, creative recipe that uses most or all of the available ingredients while respecting all preferences and restrictions. Make sure the recipe is well-structured, detailed, and easy to follow. Include quantities for ingredients and detailed steps."
+        
+        return prompt
+    }
+    
+    // Extract ingredients from text
     private func extractIngredientsFromText(_ text: String) -> [String] {
         var ingredients: [String] = []
         
-        // Try to find anything that looks like an ingredient
+        // Split by lines and process each line
         let lines = text.components(separatedBy: .newlines)
+        
         for line in lines {
             let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedLine.isEmpty { continue }

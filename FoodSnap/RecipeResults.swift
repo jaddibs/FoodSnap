@@ -10,39 +10,61 @@ import SwiftUI
 struct RecipeCard: View {
     @Environment(\.colorScheme) var colorScheme
     
+    let recipe: Recipe
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Placeholder image
-            Image(systemName: "photo")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(height: 200)
-                .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.2))
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
-                .padding(.bottom, 16)
+            // Recipe image
+            Group {
+                if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
+                } else {
+                    Image(systemName: "photo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 200)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray.opacity(0.2))
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
+                }
+            }
+            .padding(.bottom, 16)
             
             // Recipe title
-            Text("Delicious Recipe")
+            Text(recipe.title)
                 .font(Theme.Typography.title2.weight(.bold))
                 .foregroundColor(Theme.Colors.text)
                 .padding(.bottom, 8)
             
             // Recipe details
             HStack(spacing: 16) {
-                Label("30 min", systemImage: "clock")
+                Label(recipe.cookTime, systemImage: "clock")
                     .font(Theme.Typography.footnote)
                     .foregroundColor(Theme.Colors.secondaryText)
                 
-                Label("Medium", systemImage: "chart.bar")
+                Label(recipe.difficulty, systemImage: "chart.bar")
                     .font(Theme.Typography.footnote)
                     .foregroundColor(Theme.Colors.secondaryText)
                 
-                Label("4 servings", systemImage: "person.2")
+                Label("\(recipe.servings) servings", systemImage: "person.2")
                     .font(Theme.Typography.footnote)
                     .foregroundColor(Theme.Colors.secondaryText)
             }
             .padding(.bottom, 16)
+            
+            // Recipe description
+            if let description = recipe.description {
+                Text(description)
+                    .font(Theme.Typography.body)
+                    .foregroundColor(Theme.Colors.secondaryText)
+                    .italic()
+                    .padding(.bottom, 16)
+            }
             
             // Ingredients section
             Text("Ingredients")
@@ -51,7 +73,7 @@ struct RecipeCard: View {
                 .padding(.bottom, 8)
             
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(["Ingredient 1", "Ingredient 2", "Ingredient 3", "Ingredient 4", "Ingredient 5"], id: \.self) { ingredient in
+                ForEach(recipe.ingredients, id: \.self) { ingredient in
                     HStack(alignment: .top, spacing: 8) {
                         Text("•")
                             .foregroundColor(Theme.Colors.primary)
@@ -70,16 +92,16 @@ struct RecipeCard: View {
                 .padding(.bottom, 8)
             
             VStack(alignment: .leading, spacing: 12) {
-                ForEach(1...4, id: \.self) { step in
+                ForEach(Array(zip(recipe.instructions.indices, recipe.instructions)), id: \.0) { index, instruction in
                     HStack(alignment: .top, spacing: 12) {
-                        Text("\(step)")
+                        Text("\(index + 1)")
                             .font(Theme.Typography.title3.weight(.bold))
                             .foregroundColor(.white)
                             .frame(width: 30, height: 30)
                             .background(Theme.Colors.primary)
                             .clipShape(Circle())
                         
-                        Text("This is step \(step) of the recipe instructions. It explains what to do in this part of the cooking process.")
+                        Text(instruction)
                             .font(Theme.Typography.body)
                             .foregroundColor(Theme.Colors.text)
                     }
@@ -111,8 +133,12 @@ struct RecipeResults: View {
     let nutritionalRequirements: [String]
     
     // UI state
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var showIngredientDetails = false
+    @State private var recipe: Recipe = Recipe.placeholder
+    
+    // Services
+    private let geminiService = GeminiService()
     
     var body: some View {
         ZStack {
@@ -164,156 +190,177 @@ struct RecipeResults: View {
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                     .padding(.bottom, 16)
                 
-                // Main content area
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Recipe info header
-                        HStack {
-                            Button(action: {
-                                showIngredientDetails.toggle()
-                            }) {
-                                HStack {
-                                    Text("Recipe Details")
-                                        .font(Theme.Typography.title3)
-                                        .foregroundColor(Theme.Colors.text)
+                if isLoading {
+                    Spacer()
+                    
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(Theme.Colors.primary)
+                        
+                        Text("Creating your recipe...")
+                            .font(Theme.Typography.title3)
+                            .foregroundColor(Theme.Colors.text)
+                        
+                        Text("This may take a moment")
+                            .font(Theme.Typography.subheadline)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                    }
+                    
+                    Spacer()
+                } else {
+                    // Main content area
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            // Recipe info header
+                            HStack {
+                                Button(action: {
+                                    showIngredientDetails.toggle()
+                                }) {
+                                    HStack {
+                                        Text("Recipe Details")
+                                            .font(Theme.Typography.title3)
+                                            .foregroundColor(Theme.Colors.text)
+                                        
+                                        Image(systemName: showIngredientDetails ? "chevron.up" : "chevron.down")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundColor(Theme.Colors.secondaryText)
+                                    }
+                                }
+                                
+                                Spacer()
+                                
+                                // Swipe instruction
+                                HStack(spacing: 4) {
+                                    Image(systemName: "hand.draw")
+                                        .font(.footnote)
+                                        .foregroundColor(Theme.Colors.secondaryText)
                                     
-                                    Image(systemName: showIngredientDetails ? "chevron.up" : "chevron.down")
-                                        .font(.footnote.weight(.semibold))
+                                    Text("Swipe for more")
+                                        .font(Theme.Typography.footnote)
                                         .foregroundColor(Theme.Colors.secondaryText)
                                 }
                             }
-                            
-                            Spacer()
-                            
-                            // Swipe instruction
-                            HStack(spacing: 4) {
-                                Image(systemName: "hand.draw")
-                                    .font(.footnote)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                                
-                                Text("Swipe for more")
-                                    .font(Theme.Typography.footnote)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                            }
-                        }
-                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        
-                        // Ingredient details (collapsible)
-                        if showIngredientDetails {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Selected ingredients
-                                DetailsGroupView(
-                                    title: "Ingredients",
-                                    icon: "carrot",
-                                    items: ingredients
-                                )
-                                
-                                // Selected preferences
-                                if let mealType = mealType {
-                                    DetailsItemView(
-                                        title: "Meal Type",
-                                        icon: "fork.knife",
-                                        value: mealType
-                                    )
-                                }
-                                
-                                if let skillLevel = skillLevel {
-                                    DetailsItemView(
-                                        title: "Skill Level",
-                                        icon: "chart.bar",
-                                        value: skillLevel
-                                    )
-                                }
-                                
-                                if let cookTime = cookTime {
-                                    DetailsItemView(
-                                        title: "Cook Time",
-                                        icon: "clock",
-                                        value: cookTime
-                                    )
-                                }
-                                
-                                if !cuisines.isEmpty {
-                                    DetailsGroupView(
-                                        title: "Cuisines",
-                                        icon: "globe",
-                                        items: cuisines
-                                    )
-                                }
-                                
-                                if !allergies.isEmpty {
-                                    DetailsGroupView(
-                                        title: "Allergies",
-                                        icon: "exclamationmark.triangle",
-                                        items: allergies
-                                    )
-                                }
-                                
-                                if !dietaryRestrictions.isEmpty {
-                                    DetailsGroupView(
-                                        title: "Dietary Restrictions",
-                                        icon: "leaf",
-                                        items: dietaryRestrictions
-                                    )
-                                }
-                                
-                                if !nutritionalRequirements.isEmpty {
-                                    DetailsGroupView(
-                                        title: "Nutritional Requirements",
-                                        icon: "heart",
-                                        items: nutritionalRequirements
-                                    )
-                                }
-                            }
                             .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                            .padding(.bottom, 8)
-                        }
-                        
-                        // Recipe card
-                        RecipeCard()
-                            .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                        
-                        // Action buttons
-                        HStack(spacing: 16) {
-                            // Dislike button
-                            Button(action: {
-                                // Handle dislike action
-                            }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 22, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 60, height: 60)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
+                            
+                            // Ingredient details (collapsible)
+                            if showIngredientDetails {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // Selected ingredients
+                                    DetailsGroupView(
+                                        title: "Ingredients",
+                                        icon: "carrot",
+                                        items: ingredients
+                                    )
+                                    
+                                    // Selected preferences
+                                    if let mealType = mealType {
+                                        DetailsItemView(
+                                            title: "Meal Type",
+                                            icon: "fork.knife",
+                                            value: mealType
+                                        )
+                                    }
+                                    
+                                    if let skillLevel = skillLevel {
+                                        DetailsItemView(
+                                            title: "Skill Level",
+                                            icon: "chart.bar",
+                                            value: skillLevel
+                                        )
+                                    }
+                                    
+                                    if let cookTime = cookTime {
+                                        DetailsItemView(
+                                            title: "Cook Time",
+                                            icon: "clock",
+                                            value: cookTime
+                                        )
+                                    }
+                                    
+                                    if !cuisines.isEmpty {
+                                        DetailsGroupView(
+                                            title: "Cuisines",
+                                            icon: "globe",
+                                            items: cuisines
+                                        )
+                                    }
+                                    
+                                    if !allergies.isEmpty {
+                                        DetailsGroupView(
+                                            title: "Allergies",
+                                            icon: "exclamationmark.triangle",
+                                            items: allergies
+                                        )
+                                    }
+                                    
+                                    if !dietaryRestrictions.isEmpty {
+                                        DetailsGroupView(
+                                            title: "Dietary Restrictions",
+                                            icon: "leaf",
+                                            items: dietaryRestrictions
+                                        )
+                                    }
+                                    
+                                    if !nutritionalRequirements.isEmpty {
+                                        DetailsGroupView(
+                                            title: "Nutritional Requirements",
+                                            icon: "heart",
+                                            items: nutritionalRequirements
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                                .padding(.bottom, 8)
                             }
                             
-                            // Save button
-                            Button(action: {
-                                // Handle save action
-                            }) {
-                                Image(systemName: "bookmark")
-                                    .font(.system(size: 22, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 60, height: 60)
-                                    .background(Theme.Colors.accent)
-                                    .clipShape(Circle())
-                            }
+                            // Recipe card
+                            RecipeCard(recipe: recipe)
+                                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                             
-                            // Like button
-                            Button(action: {
-                                // Handle like action
-                            }) {
-                                Image(systemName: "heart")
-                                    .font(.system(size: 22, weight: .medium))
-                                    .foregroundColor(.white)
-                                    .frame(width: 60, height: 60)
-                                    .background(Theme.Colors.primary)
-                                    .clipShape(Circle())
+                            // Action buttons
+                            HStack(spacing: 16) {
+                                // Dislike button
+                                Button(action: {
+                                    // Handle dislike action
+                                    generateNewRecipe()
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .frame(width: 60, height: 60)
+                                        .background(Color.red)
+                                        .clipShape(Circle())
+                                }
+                                
+                                // Save button
+                                Button(action: {
+                                    // Handle save action
+                                }) {
+                                    Image(systemName: "bookmark")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .frame(width: 60, height: 60)
+                                        .background(Theme.Colors.accent)
+                                        .clipShape(Circle())
+                                }
+                                
+                                // Like button
+                                Button(action: {
+                                    // Handle like action
+                                }) {
+                                    Image(systemName: "heart")
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .frame(width: 60, height: 60)
+                                        .background(Theme.Colors.primary)
+                                        .clipShape(Circle())
+                                }
                             }
+                            .padding(.vertical, 24)
                         }
-                        .padding(.vertical, 24)
+                        .padding(.bottom, 24)
                     }
-                    .padding(.bottom, 24)
                 }
             }
             .padding(.bottom)
@@ -348,7 +395,59 @@ struct RecipeResults: View {
                     }
                 }
             }
+            .onAppear {
+                generateRecipe()
+            }
         }
+    }
+    
+    // Generate a recipe based on user preferences
+    private func generateRecipe() {
+        isLoading = true
+        
+        // Add a safety timeout to ensure we don't get stuck
+        let safetyTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: false) { _ in
+            if self.isLoading {
+                print("⚠️ SAFETY TIMEOUT - Recipe generation taking too long, using fallback")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.recipe = Recipe.placeholder
+                }
+            }
+        }
+        
+        geminiService.generateRecipe(
+            ingredients: ingredients,
+            mealType: mealType,
+            skillLevel: skillLevel,
+            cookTime: cookTime,
+            cuisines: cuisines,
+            allergies: allergies,
+            dietaryRestrictions: dietaryRestrictions,
+            nutritionalRequirements: nutritionalRequirements
+        ) { result in
+            // Cancel the safety timer
+            safetyTimer.invalidate()
+            
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                switch result {
+                case .success(let generatedRecipe):
+                    self.recipe = generatedRecipe
+                case .failure(let error):
+                    print("Error generating recipe: \(error.localizedDescription)")
+                    // Use placeholder recipe on error
+                    self.recipe = Recipe.placeholder
+                }
+            }
+        }
+    }
+    
+    // Generate a new recipe if user dislikes the current one
+    private func generateNewRecipe() {
+        isLoading = true
+        generateRecipe()
     }
 }
 
