@@ -23,12 +23,6 @@ struct WelcomeView: View {
                             .font(Theme.Typography.largeTitle)
                             .foregroundColor(Theme.Colors.text)
                             .multilineTextAlignment(.center)
-                        
-                        Text("Turn your ingredients into delicious recipes")
-                            .font(Theme.Typography.title3)
-                            .foregroundColor(Theme.Colors.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
                     }
                     .padding(.top, 20)
                     .padding(.bottom, 20)
@@ -55,8 +49,8 @@ struct WelcomeView: View {
                         FeatureStep(
                             icon: "fork.knife",
                             iconColor: Theme.Colors.primary,
-                            title: "Get a Recipe",
-                            description: "Discover delicious recipes matching your ingredients"
+                            title: "Recipify",
+                            description: "Discover your perfect recipe tailored to your ingredients"
                         )
                     }
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)

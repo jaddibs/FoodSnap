@@ -165,7 +165,7 @@ struct RecipeResults: View {
                     Spacer()
                     
                     // Center title
-                    Text("Get a Recipe")
+                    Text("Recipify")
                         .font(Theme.Typography.title3)
                         .foregroundColor(Theme.Colors.text)
                     
@@ -183,7 +183,7 @@ struct RecipeResults: View {
                     .padding(.bottom, 12)
                 
                 // App description
-                Text("Discover delicious recipes")
+                Text("Discover your perfect recipe")
                     .font(Theme.Typography.callout)
                     .foregroundColor(Theme.Colors.secondaryText)
                     .multilineTextAlignment(.center)
