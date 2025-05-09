@@ -310,8 +310,12 @@ struct ManageIngredients: View {
     
     // Initialize with ingredients from Gemini analysis
     init(identifiedIngredients: [String] = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]) {
-        _identifiedIngredients = State(initialValue: identifiedIngredients)
-        _selectedIngredients = State(initialValue: identifiedIngredients)
+        // Ensure all initial ingredients have their first letter capitalized
+        let capitalizedIngredients = identifiedIngredients.map { ingredient in
+            ingredient.prefix(1).capitalized + ingredient.dropFirst()
+        }
+        _identifiedIngredients = State(initialValue: capitalizedIngredients)
+        _selectedIngredients = State(initialValue: capitalizedIngredients)
     }
     
     var body: some View {
@@ -566,8 +570,10 @@ struct ManageIngredients: View {
                 
                 Button(action: {
                     if !newIngredient.isEmpty && !identifiedIngredients.contains(newIngredient) {
-                        identifiedIngredients.append(newIngredient)
-                        selectedIngredients.append(newIngredient)
+                        // Capitalize the first letter of the new ingredient
+                        let capitalizedIngredient = newIngredient.prefix(1).capitalized + newIngredient.dropFirst()
+                        identifiedIngredients.append(capitalizedIngredient)
+                        selectedIngredients.append(capitalizedIngredient)
                         newIngredient = ""
                     }
                 }) {
