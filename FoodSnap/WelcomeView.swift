@@ -62,7 +62,7 @@ struct WelcomeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "leaf.fill")
                                 .font(.system(size: 14))
-                                .foregroundColor(.green)
+                                .foregroundColor(Theme.Colors.primary)
                                 .symbolEffect(.pulse, options: .repeating, value: true)
                             
                             Text("Reduce food waste. Promote sustainably.")
@@ -74,11 +74,11 @@ struct WelcomeView: View {
                         .background(
                             Capsule()
                                 .fill(colorScheme == .dark ? 
-                                      Color.green.opacity(0.1) : 
-                                      Color.green.opacity(0.08))
+                                      Theme.Colors.primary.opacity(0.15) : 
+                                      Theme.Colors.secondary.opacity(0.5))
                                 .overlay(
                                     Capsule()
-                                        .strokeBorder(Color.green.opacity(0.3), lineWidth: 1)
+                                        .strokeBorder(Theme.Colors.primary.opacity(0.4), lineWidth: 1)
                                 )
                         )
                     }
