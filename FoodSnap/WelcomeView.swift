@@ -13,7 +13,7 @@ struct WelcomeView: View {
                 
                 VStack(spacing: 0) {
                     // App Logo and Name
-                    VStack(spacing: Theme.Dimensions.spacing) {
+                    VStack(spacing: Theme.Dimensions.spacing * 1.1) {
                         Image(systemName: "camera.aperture")
                             .font(.system(size: 60))
                             .foregroundColor(Theme.Colors.accent)
@@ -23,12 +23,17 @@ struct WelcomeView: View {
                             .font(Theme.Typography.largeTitle)
                             .foregroundColor(Theme.Colors.text)
                             .multilineTextAlignment(.center)
+                        
+                        Text("Recipify your ingredients!")
+                            .font(Theme.Typography.title3)
+                            .foregroundColor(Theme.Colors.secondaryText)
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 22)
                     
                     // App Steps
-                    VStack(spacing: Theme.Dimensions.spacing * 1.5) {
+                    VStack(spacing: Theme.Dimensions.spacing * 1.8) {
                         // Step 1
                         FeatureStep(
                             icon: "camera.fill",
@@ -52,6 +57,30 @@ struct WelcomeView: View {
                             title: "Recipify",
                             description: "Discover your perfect recipe tailored to your ingredients"
                         )
+                        
+                        // Sustainability Badge - positioned with same spacing as between containers
+                        HStack(spacing: 6) {
+                            Image(systemName: "leaf.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.green)
+                                .symbolEffect(.pulse, options: .repeating, value: true)
+                            
+                            Text("Reduce food waste. Promote sustainably.")
+                                .font(Theme.Typography.footnote.italic())
+                                .foregroundColor(Theme.Colors.secondaryText)
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule()
+                                .fill(colorScheme == .dark ? 
+                                      Color.green.opacity(0.1) : 
+                                      Color.green.opacity(0.08))
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(Color.green.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                     
@@ -68,7 +97,7 @@ struct WelcomeView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                    .padding(.vertical, 30)
+                    .padding(.vertical, 20)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
