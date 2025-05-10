@@ -278,10 +278,14 @@ class GeminiService {
             }
         }
         
-        // For debugging - provides a working API key
-        // Get a real API key from: https://makersuite.google.com/app/apikey
-        print("⚠️ No API key found in .env file - using hardcoded test key")
-        return "AIzaSyB_kGcyScv1Kh9wYi9WSi7MmGmwmMAkP_o" // This is a test key, replace with your own
+        // For development environments, check environment variables
+        if let apiKey = ProcessInfo.processInfo.environment["GEMINI_API_KEY"], !apiKey.isEmpty {
+            print("🔑 Found API key in environment variables")
+            return apiKey
+        }
+        
+        print("⚠️ No API key found in .env file or environment variables")
+        return nil  // Return nil to trigger proper fallback behavior
     }
     
     private func parseAPIKey(from contents: String) -> String? {
