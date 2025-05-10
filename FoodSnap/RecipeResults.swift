@@ -156,32 +156,44 @@ struct RecipeFullView: View {
                                 .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
                                 .padding(16)
                         }
+                        
+                        // Title with semi-transparent background
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(recipe.title)
+                                .font(Theme.Typography.title.weight(.bold))
+                                .foregroundColor(colorScheme == .dark ? .white : .white)
+                            
+                            HStack(spacing: 16) {
+                                Label(recipe.cookTime, systemImage: "clock")
+                                    .font(Theme.Typography.callout)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .white.opacity(0.9))
+                                
+                                Label(recipe.difficulty, systemImage: "chart.bar")
+                                    .font(Theme.Typography.callout)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .white.opacity(0.9))
+                                
+                                Label("\(recipe.servings) servings", systemImage: "person.2")
+                                    .font(Theme.Typography.callout)
+                                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .white.opacity(0.9))
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(LinearGradient(
+                            gradient: Gradient(colors: [
+                                colorScheme == .dark ? Color.black.opacity(0.6) : Color.black.opacity(0.7), 
+                                colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.5),
+                                colorScheme == .dark ? Color.black.opacity(0.1) : Color.black.opacity(0.3),
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ))
+                        .padding(.top, 260)
                     }
                     .padding(.bottom, 24)
                     
                     // Recipe content
                     VStack(alignment: .leading, spacing: 24) {
-                        // Title and details
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(recipe.title)
-                                .font(Theme.Typography.title.weight(.bold))
-                                .foregroundColor(Theme.Colors.text)
-                            
-                            HStack(spacing: 16) {
-                                Label(recipe.cookTime, systemImage: "clock")
-                                    .font(Theme.Typography.callout)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                                
-                                Label(recipe.difficulty, systemImage: "chart.bar")
-                                    .font(Theme.Typography.callout)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                                
-                                Label("\(recipe.servings) servings", systemImage: "person.2")
-                                    .font(Theme.Typography.callout)
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                            }
-                        }
-                        
                         // Description
                         if let description = recipe.description {
                             Text(description)
