@@ -458,7 +458,15 @@ struct ManageIngredients: View {
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $navigateToRecipeResults) {
                 RecipeResults(
-                    ingredients: selectedIngredients
+                    ingredients: selectedIngredients,
+                    mealType: selectedMealTime,
+                    mealSubtype: selectedMealType,
+                    skillLevel: selectedSkillLevel,
+                    cookTime: selectedCookTime,
+                    cuisines: Array(selectedCuisines),
+                    allergies: Array(selectedAllergies),
+                    dietaryRestrictions: Array(selectedDiets),
+                    nutritionalRequirements: Array(selectedNutrition)
                 )
             }
             .toolbar {
@@ -502,6 +510,18 @@ struct ManageIngredients: View {
         }
         
         if currentSection == .nutritionalRequirements {
+            // Print debug info before navigating
+            print("🚀 Navigating to RecipeResults with:")
+            print("📋 Ingredients: \(selectedIngredients)")
+            print("🕰️ Meal Type: \(selectedMealTime ?? "None")")
+            print("🍲 Meal Subtype: \(selectedMealType ?? "None")")
+            print("📊 Skill Level: \(selectedSkillLevel ?? "None")")
+            print("⏱️ Cook Time: \(selectedCookTime ?? "None")")
+            print("🌍 Cuisines: \(selectedCuisines)")
+            print("⚠️ Allergies: \(selectedAllergies)")
+            print("🥦 Dietary Restrictions: \(selectedDiets)")
+            print("💪 Nutritional Requirements: \(selectedNutrition)")
+            
             // Navigate to recipe generation screen
             navigateToRecipeResults = true
             return

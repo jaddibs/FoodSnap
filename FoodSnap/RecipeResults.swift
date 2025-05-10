@@ -217,9 +217,49 @@ struct RecipeResults: View {
     
     // Recipe parameters
     let ingredients: [String]
+    var mealType: String?
+    var mealSubtype: String?
+    var skillLevel: String?
+    var cookTime: String?
+    var cuisines: [String]
+    var allergies: [String]
+    var dietaryRestrictions: [String]
+    var nutritionalRequirements: [String]
     
     // UI state
     @State private var showFullRecipe = false
+    @State private var isLoading = true
+    @State private var recipe: Recipe = Recipe.placeholder
+    @State private var errorMessage: String? = nil
+    
+    // Services
+    private let geminiService = GeminiService()
+    
+    init(
+        ingredients: [String],
+        mealType: String? = nil,
+        mealSubtype: String? = nil,
+        skillLevel: String? = nil,
+        cookTime: String? = nil,
+        cuisines: [String] = [],
+        allergies: [String] = [],
+        dietaryRestrictions: [String] = [],
+        nutritionalRequirements: [String] = []
+    ) {
+        print("📋 RecipeResults initialized with \(ingredients.count) ingredients")
+        self.ingredients = ingredients
+        self.mealType = mealType
+        self.mealSubtype = mealSubtype
+        self.skillLevel = skillLevel
+        self.cookTime = cookTime
+        self.cuisines = cuisines
+        self.allergies = allergies
+        self.dietaryRestrictions = dietaryRestrictions
+        self.nutritionalRequirements = nutritionalRequirements
+        
+        // Initialize with loading state
+        self._isLoading = State(initialValue: true)
+    }
     
     var body: some View {
         ZStack {
@@ -271,40 +311,67 @@ struct RecipeResults: View {
                     .padding(.horizontal, Theme.Dimensions.horizontalPadding)
                     .padding(.bottom, 16)
                 
-                // Main content area
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Recipe card
-                        RecipeCard(
-                            recipe: Recipe.placeholder,
-                            onTap: {
-                                withAnimation {
-                                    showFullRecipe = true
+                if isLoading {
+                    // Loading state
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.primary))
+                        .padding()
+                    Text("Creating your recipe...")
+                        .font(Theme.Typography.body)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                        .padding()
+                    Spacer()
+                } else if let error = errorMessage {
+                    // Error state
+                    Spacer()
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 50))
+                        .foregroundColor(Theme.Colors.primary)
+                        .padding()
+                    Text(error)
+                        .font(Theme.Typography.body)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    Spacer()
+                } else {
+                    // Main content area with recipe
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            // Recipe card
+                            RecipeCard(
+                                recipe: recipe,
+                                onTap: {
+                                    withAnimation {
+                                        showFullRecipe = true
+                                    }
                                 }
-                            }
-                        )
-                        .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                            )
+                            .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                        }
+                        .padding(.bottom, 24)
                     }
-                    .padding(.bottom, 24)
-                }
-                
-                Spacer()
-                
-                // Another Recipe button at bottom of screen
-                Button(action: {
-                    // No implementation yet
-                }) {
-                    HStack {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.headline)
-                        
-                        Text("Another Recipe!")
-                            .font(Theme.Typography.title3)
+                    
+                    Spacer()
+                    
+                    // Another Recipe button at bottom of screen
+                    Button(action: {
+                        generateNewRecipe()
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.headline)
+                            
+                            Text("Another Recipe!")
+                                .font(Theme.Typography.title3)
+                        }
                     }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .padding(.horizontal, Theme.Dimensions.horizontalPadding)
+                    .padding(.bottom, 32)
                 }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, Theme.Dimensions.horizontalPadding)
-                .padding(.bottom, 32)
             }
             .padding(.bottom)
             .navigationBarTitleDisplayMode(.inline)
@@ -342,7 +409,7 @@ struct RecipeResults: View {
             // Full recipe overlay
             if showFullRecipe {
                 RecipeFullView(
-                    recipe: Recipe.placeholder,
+                    recipe: recipe,
                     onDismiss: {
                         withAnimation {
                             showFullRecipe = false
@@ -353,6 +420,81 @@ struct RecipeResults: View {
                 .zIndex(1)
             }
         }
+        .onAppear {
+            print("🚀 RecipeResults view appeared - starting recipe generation")
+            // Force immediate recipe generation when the view appears
+            DispatchQueue.main.async {
+                generateNewRecipe()
+            }
+        }
+        .task {
+            // This is a backup in case onAppear doesn't trigger
+            print("🔄 RecipeResults task modifier activated")
+            generateNewRecipe()
+        }
+    }
+    
+    private func generateNewRecipe() {
+        isLoading = true
+        errorMessage = nil
+        
+        // Super explicit debug prints that will appear in the console
+        NSLog("🚨 FOODSNAP: Generating recipe with ingredients: \(ingredients.joined(separator: ", "))")
+        NSLog("🚨 FOODSNAP: User preferences - Meal: \(mealType ?? "None"), Type: \(mealSubtype ?? "None"), Skill: \(skillLevel ?? "None")")
+        
+        // Debug info
+        print("🍽️ generateNewRecipe called")
+        print("📋 Ingredients: \(ingredients.joined(separator: ", "))")
+        print("🕰️ Meal Type: \(mealType ?? "None")")
+        print("🍲 Meal Subtype: \(mealSubtype ?? "None")")
+        print("📊 Skill Level: \(skillLevel ?? "None")")
+        print("⏱️ Cook Time: \(cookTime ?? "None")")
+        print("🌍 Cuisines: \(cuisines.joined(separator: ", "))")
+        print("⚠️ Allergies: \(allergies.joined(separator: ", "))")
+        print("🥦 Dietary Restrictions: \(dietaryRestrictions.joined(separator: ", "))")
+        print("💪 Nutritional Requirements: \(nutritionalRequirements.joined(separator: ", "))")
+        
+        // Save completion handler to a local variable to ensure it's not lost
+        let completionHandler: (Result<Recipe, Error>) -> Void = { [self] result in
+            NSLog("🚨 FOODSNAP: Recipe generation completed")
+            
+            isLoading = false
+            
+            switch result {
+            case .success(let generatedRecipe):
+                NSLog("🚨 FOODSNAP: Recipe success: \(generatedRecipe.title)")
+                print("✅ Recipe generation successful: \(generatedRecipe.title)")
+                self.recipe = generatedRecipe
+            case .failure(let error):
+                NSLog("🚨 FOODSNAP: Recipe failed: \(error.localizedDescription)")
+                print("❌ Recipe generation failed: \(error.localizedDescription)")
+                self.errorMessage = "Failed to generate recipe: \(error.localizedDescription)"
+                self.recipe = Recipe.placeholder
+            }
+        }
+        
+        // For debugging - print ingredients one more time
+        for (index, ingredient) in ingredients.enumerated() {
+            NSLog("🚨 FOODSNAP: Ingredient \(index+1): \(ingredient)")
+        }
+        
+        NSLog("🚨 FOODSNAP: Calling geminiService.generateRecipe")
+        
+        // Call the Gemini service
+        geminiService.generateRecipe(
+            ingredients: ingredients,
+            mealType: mealType,
+            mealSubtype: mealSubtype,
+            skillLevel: skillLevel,
+            cookTime: cookTime,
+            cuisines: cuisines,
+            allergies: allergies,
+            dietaryRestrictions: dietaryRestrictions,
+            nutritionalRequirements: nutritionalRequirements,
+            completion: completionHandler
+        )
+        
+        NSLog("🚨 FOODSNAP: geminiService.generateRecipe call completed - waiting for callback")
     }
 }
 
