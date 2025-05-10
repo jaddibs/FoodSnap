@@ -310,12 +310,21 @@ struct ManageIngredients: View {
     
     // Initialize with ingredients from Gemini analysis
     init(identifiedIngredients: [String] = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]) {
-        // Ensure all initial ingredients have their first letter capitalized
+        // Log the incoming ingredients
+        print("ManageIngredients received \(identifiedIngredients.count) ingredients: \(identifiedIngredients)")
+        
+        // Ensure all initial ingredients have their first letter capitalized and are unique
         let capitalizedIngredients = identifiedIngredients.map { ingredient in
             ingredient.prefix(1).capitalized + ingredient.dropFirst()
         }
-        _identifiedIngredients = State(initialValue: capitalizedIngredients)
-        _selectedIngredients = State(initialValue: capitalizedIngredients)
+        
+        // Remove duplicates and sort alphabetically for better user experience
+        let uniqueIngredients = Array(Set(capitalizedIngredients)).sorted()
+        
+        print("ManageIngredients processed \(uniqueIngredients.count) unique ingredients")
+        
+        _identifiedIngredients = State(initialValue: uniqueIngredients)
+        _selectedIngredients = State(initialValue: uniqueIngredients)
     }
     
     var body: some View {

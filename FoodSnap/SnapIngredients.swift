@@ -354,7 +354,7 @@ struct SnapIngredients: View {
                 
                 switch result {
                 case .success(let ingredients):
-                    print("*** SUCCESS! Found \(ingredients.count) ingredients: \(ingredients) ***")
+                    print("*** SUCCESS! Found \(ingredients.count) ingredients across \(selectedImages.count) images: \(ingredients) ***")
                     
                     // Check if any ingredients were detected
                     if ingredients.isEmpty {
@@ -363,10 +363,12 @@ struct SnapIngredients: View {
                         return
                     }
                     
-                    // Update ingredients
-                    self.analyzedIngredients = ingredients
+                    // Update ingredients - ensure they all have capitalized first letter for consistency
+                    self.analyzedIngredients = ingredients.map { ingredient in
+                        ingredient.prefix(1).capitalized + ingredient.dropFirst()
+                    }
                     
-                    print("*** Updated analyzedIngredients, now forcing navigation ***")
+                    print("*** Updated analyzedIngredients (\(self.analyzedIngredients.count) items), now forcing navigation ***")
                     
                     // Force navigation with our robust method
                     DispatchQueue.main.async {

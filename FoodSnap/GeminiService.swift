@@ -18,6 +18,15 @@ class GeminiService {
         // TEMPORARY HARDCODED FALLBACK - This guarantees we always have ingredients for error cases
         let fallbackIngredients = ["Chicken", "Tomatoes", "Onions", "Garlic", "Olive Oil"]
         
+        // Verify we have images to analyze
+        guard !images.isEmpty else {
+            print("⚠️ No images provided - using fallback ingredients")
+            completion(.success(fallbackIngredients))
+            return
+        }
+        
+        print("🔎 Analyzing \(images.count) images for ingredients")
+        
         guard let apiKey = loadAPIKey() else {
             print("⚠️ API Key not found - using fallback ingredients")
             // Even if API key is missing, provide fallback ingredients
@@ -119,28 +128,16 @@ class GeminiService {
                             return
                         }
                         
-                        // Next try: Parse JSON array
-                        if let regex = try? NSRegularExpression(pattern: "\\[.*?\\]", options: .dotMatchesLineSeparators),
-                           let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) {
-                            let jsonText = (text as NSString).substring(with: match.range)
-                            
-                            do {
-                                let jsonData = jsonText.data(using: .utf8)!
-                                let ingredients = try JSONDecoder().decode([String].self, from: jsonData)
-                                print("✅ Successfully parsed JSON: \(ingredients)")
-                                // Return empty array as-is, don't replace with fallback
-                                returnResult(.success(ingredients))
-                                return
-                            } catch {
-                                print("⚠️ JSON parsing failed: \(error.localizedDescription)")
-                                // Continue to fallback parsing
-                            }
-                        }
-                        
-                        // Second try: Basic text extraction
+                        // Use our enhanced extractIngredientsFromText method which can handle multiple arrays
                         let extractedIngredients = self.extractIngredientsFromText(text)
-                        print("✅ Extracted ingredients via text parsing: \(extractedIngredients)")
-                        returnResult(.success(extractedIngredients))
+                        
+                        if extractedIngredients.isEmpty && !text.isEmpty {
+                            print("⚠️ Failed to extract ingredients from non-empty text - using fallback")
+                            returnResult(.success(fallbackIngredients))
+                        } else {
+                            print("✅ Successfully extracted \(extractedIngredients.count) ingredients")
+                            returnResult(.success(extractedIngredients))
+                        }
                         return
                     }
                 }
@@ -159,6 +156,34 @@ class GeminiService {
     // Extract ingredients from text
     private func extractIngredientsFromText(_ text: String) -> [String] {
         var ingredients: [String] = []
+        
+        // Handle multiple JSON arrays case - combine all found arrays
+        if let regex = try? NSRegularExpression(pattern: "\\[.*?\\]", options: .dotMatchesLineSeparators) {
+            let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+            
+            // Try to extract from each JSON array match
+            for match in matches {
+                let jsonText = (text as NSString).substring(with: match.range)
+                
+                do {
+                    let jsonData = jsonText.data(using: .utf8)!
+                    let extractedIngredients = try JSONDecoder().decode([String].self, from: jsonData)
+                    ingredients.append(contentsOf: extractedIngredients)
+                } catch {
+                    // If JSON parsing fails, we'll fall back to text parsing below
+                    print("⚠️ JSON array parsing failed for match: \(error.localizedDescription)")
+                }
+            }
+            
+            // If we found valid JSON arrays, return the combined ingredients
+            if !ingredients.isEmpty {
+                print("✅ Successfully parsed multiple JSON arrays")
+                return Array(Set(ingredients)).sorted() // Remove duplicates and sort
+            }
+        }
+        
+        // Fallback to text parsing for non-JSON responses
+        print("⚠️ Falling back to text parsing")
         
         // Split by lines and process each line
         let lines = text.components(separatedBy: .newlines)
@@ -203,7 +228,9 @@ class GeminiService {
         // Add text instructions - keep it simple and clear
         parts.append([
             "text": """
-            Analyze the food ingredients in these images.
+            Analyze ALL the food ingredients in these images collectively.
+            Consider ALL images as a complete set of ingredients - don't analyze each image separately.
+            Combine ingredients from all images into a single comprehensive list.
             Return ONLY a JSON array of ingredient names. Example: ["tomato", "onion", "chicken", "olive oil"]
             Be specific but concise with ingredient names.
             If no ingredients are visible, return an empty JSON array: []
