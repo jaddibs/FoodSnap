@@ -303,6 +303,8 @@ class GeminiService {
         case noDataReceived
         case invalidResponse
         case apiError(String)
+        case insufficientIngredients(String)
+        case recipeGenerationFailed(String)
         
         var errorDescription: String? {
             switch self {
@@ -314,6 +316,10 @@ class GeminiService {
                 return "Invalid response from the API."
             case .apiError(let message):
                 return "API Error: \(message)"
+            case .insufficientIngredients(let message):
+                return "Not enough ingredients: \(message)"
+            case .recipeGenerationFailed(let message):
+                return "Unable to create recipe: \(message)"
             }
         }
     }
@@ -365,7 +371,15 @@ class GeminiService {
         guard !ingredients.isEmpty else {
             print("⚠️ No ingredients provided - using fallback recipe")
             NSLog("⚠️ No ingredients provided - using fallback recipe")
-            safeCompletion(.success(fallbackRecipe))
+            safeCompletion(.failure(GeminiError.insufficientIngredients("No ingredients provided")))
+            return
+        }
+        
+        // Check for minimum number of ingredients (at least 2 non-staple ingredients)
+        guard ingredients.count >= 2 else {
+            print("⚠️ Not enough ingredients provided - need at least 2")
+            NSLog("⚠️ Not enough ingredients provided - need at least 2")
+            safeCompletion(.failure(GeminiError.insufficientIngredients("Need at least 2 ingredients to create a recipe")))
             return
         }
         
@@ -498,6 +512,22 @@ class GeminiService {
                         print("🔍 Recipe text received from API: \(text.prefix(100))...")
                         NSLog("🔍 FOODSNAP Recipe text received")
                         
+                        // Check if the response indicates no recipe could be generated
+                        if text.contains("NO RECIPE") || text.contains("No recipe") || text.contains("NO_RECIPE") || 
+                           text.contains("UNABLE TO CREATE RECIPE") || text.contains("Unable to create recipe") {
+                            print("⚠️ Unable to create recipe with given ingredients and preferences")
+                            NSLog("⚠️ FOODSNAP Unable to create recipe with given constraints")
+                            
+                            // Extract any explanation if available
+                            var reason = "Cannot create a recipe with the given ingredients and preferences"
+                            if let explanationMatch = text.range(of: "(?:Reason|REASON|Explanation|EXPLANATION):.*?(?:\\n|$)", options: .regularExpression) {
+                                reason = String(text[explanationMatch]).replacingOccurrences(of: "(?:Reason|REASON|Explanation|EXPLANATION):\\s*", with: "", options: .regularExpression)
+                            }
+                            
+                            safeCompletion(.failure(GeminiError.recipeGenerationFailed(reason)))
+                            return
+                        }
+                        
                         // Parse the recipe text into structured data
                         let recipe = self.parseRecipeFromText(text, ingredients: ingredients)
                         print("🍽️ Parsed recipe with title: \(recipe.title)")
@@ -579,7 +609,12 @@ class GeminiService {
         
         prompt += """
         
-        Return a complete recipe with these EXACT sections, using the format below (include the section headers):
+        IMPORTANT: If you CANNOT create a satisfying recipe with the given ingredients and constraints (e.g., not enough ingredients, allergies restrict key ingredients, conflicting requirements), respond with:
+        
+        NO RECIPE
+        Reason: [Briefly explain why a recipe can't be created]
+        
+        Otherwise, return a complete recipe with these EXACT sections, using the format below (include the section headers):
         
         TITLE: [Provide a specific, creative, and appetizing name for the dish - NOT "Delicious Recipe" or generic titles]
         
