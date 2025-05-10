@@ -449,14 +449,7 @@ struct ManageIngredients: View {
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $navigateToRecipeResults) {
                 RecipeResults(
-                    ingredients: selectedIngredients,
-                    mealType: selectedMealType,
-                    skillLevel: selectedSkillLevel,
-                    cookTime: selectedCookTime,
-                    cuisines: Array(selectedCuisines),
-                    allergies: Array(selectedAllergies),
-                    dietaryRestrictions: Array(selectedDiets),
-                    nutritionalRequirements: Array(selectedNutrition)
+                    ingredients: selectedIngredients
                 )
             }
             .toolbar {
