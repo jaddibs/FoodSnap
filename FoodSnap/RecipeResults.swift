@@ -452,14 +452,11 @@ struct RecipeResults: View {
             }
         }
         .onAppear {
-            print("🚀 RecipeResults view appeared - starting recipe generation")
-            // Force immediate recipe generation when the view appears
-            DispatchQueue.main.async {
-                generateNewRecipe()
-            }
+            print("🚀 RecipeResults view appeared")
+            // Log appearance but don't trigger recipe generation here
         }
         .task {
-            // This is a backup in case onAppear doesn't trigger
+            // This is the primary method to trigger recipe generation
             print("🔄 RecipeResults task modifier activated")
             generateNewRecipe()
         }
