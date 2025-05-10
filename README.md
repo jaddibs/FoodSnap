@@ -5,7 +5,7 @@ FoodSnap is an iOS application that transforms your food ingredients into delici
 ## Features
 
 - **Ingredient Detection**: Take photos or upload images of your ingredients and let AI identify them
-- **Customizable Preferences**: Refine ingredients, set meal types, skill levels, and dietary restrictions
+- **Customizable Preferences**: Refine ingredients, set meal types, skill levels, dietary restrictions, and other preferences
 - **Recipe Generation**: Receive personalized recipes based on your ingredients and preferences
 - **Beautiful UI**: Clean, minimalist design with full dark mode support
 
