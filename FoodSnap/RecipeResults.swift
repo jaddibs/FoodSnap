@@ -201,7 +201,7 @@ struct RecipeFullView: View {
                                     HStack(alignment: .top, spacing: 8) {
                                         Text("•")
                                             .foregroundColor(Theme.Colors.primary)
-                                        Text(ingredient)
+                                        Text(ingredient.lowercased())
                                             .font(Theme.Typography.body)
                                             .foregroundColor(Theme.Colors.text)
                                     }
