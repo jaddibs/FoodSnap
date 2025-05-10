@@ -536,10 +536,12 @@ class GeminiService {
         nutritionalRequirements: [String]
     ) -> String {
         var prompt = """
-        You are a professional chef specializing in creative, delicious recipes. Create a detailed, appetizing recipe using these ingredients and preferences:
+        You are a professional chef specializing in creative, delicious recipes. Create a detailed, appetizing recipe using ONLY these ingredients and common household staples (salt, pepper, water, olive oil, vegetable oil, butter, common herbs and spices):
         
         INGREDIENTS:
         \(ingredients.joined(separator: ", "))
+        
+        IMPORTANT: DO NOT include ANY ingredients that are not in the above list or common household staples. The recipe MUST be made with ONLY the listed ingredients plus basic staples.
         
         """
         
@@ -581,7 +583,7 @@ class GeminiService {
         
         TITLE: [Provide a specific, creative, and appetizing name for the dish - NOT "Delicious Recipe" or generic titles]
         
-        DESCRIPTION: [Write a mouth-watering description of the finished dish, including texture, flavor profile, and visual appearance]
+        DESCRIPTION: [Write EXACTLY THREE descriptive sentences about the dish, including texture, flavor profile, and visual appearance]
         
         COOK_TIME: [Total preparation and cooking time]
         
@@ -600,7 +602,11 @@ class GeminiService {
         3. [Continue with numbered steps, being thorough about the cooking process]
         4. [Include at least 5-8 detailed steps for a complete cooking process]
         
+        REMEMBER: ONLY use ingredients from the provided list plus basic household staples (salt, pepper, common herbs and spices, cooking oils, butter, water). DO NOT include any other ingredients.
+        
         Be creative but practical. The recipe MUST be a real, recognizable dish with a specific name (not generic). Use proper cooking terminology and provide clear, detailed instructions a home cook could follow. All measurements should be precise.
+        
+        PERSONALIZATION: Tailor the recipe to the user's preferences as indicated above.
         """
         
         return prompt
