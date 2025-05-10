@@ -65,7 +65,7 @@ struct WelcomeView: View {
                                 .foregroundColor(Theme.Colors.primary)
                                 .symbolEffect(.pulse, options: .repeating, value: true)
                             
-                            Text("Reduce food waste. Promote sustainably.")
+                            Text("Reduce food waste. Promote sustainability.")
                                 .font(Theme.Typography.footnote.italic())
                                 .foregroundColor(Theme.Colors.secondaryText)
                         }

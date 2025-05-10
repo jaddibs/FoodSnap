@@ -337,6 +337,7 @@ class GeminiService {
     ///   - allergies: Allergies to avoid
     ///   - dietaryRestrictions: Dietary restrictions
     ///   - nutritionalRequirements: Nutritional preferences
+    ///   - generateImage: Whether to generate an image for the recipe
     ///   - completion: Callback with the generated recipe or error
     func generateRecipe(
         ingredients: [String],
@@ -348,6 +349,7 @@ class GeminiService {
         allergies: [String] = [],
         dietaryRestrictions: [String] = [],
         nutritionalRequirements: [String] = [],
+        generateImage: Bool = true,
         completion: @escaping (Result<Recipe, Error>) -> Void
     ) {
         // Use NSLog to ensure messages appear in console
@@ -532,7 +534,15 @@ class GeminiService {
                         let recipe = self.parseRecipeFromText(text, ingredients: ingredients)
                         print("🍽️ Parsed recipe with title: \(recipe.title)")
                         NSLog("🍽️ FOODSNAP Parsed recipe with title: \(recipe.title)")
-                        safeCompletion(.success(recipe))
+                        
+                        // If image generation is requested, generate an image for the recipe
+                        if generateImage {
+                            self.generateImageForRecipe(recipe) { updatedRecipe in
+                                safeCompletion(.success(updatedRecipe))
+                            }
+                        } else {
+                            safeCompletion(.success(recipe))
+                        }
                         return
                     } else {
                         print("❌ Failed to extract recipe text from response structure")
@@ -551,6 +561,34 @@ class GeminiService {
                 safeCompletion(.success(fallbackRecipe))
             }
         }.resume()
+    }
+    
+    // Generate an image for the recipe using StabilityService
+    private func generateImageForRecipe(_ recipe: Recipe, completion: @escaping (Recipe) -> Void) {
+        print("🖼️ Generating image for recipe: \(recipe.title)")
+        NSLog("🖼️ FOODSNAP Generating image for recipe: \(recipe.title)")
+        
+        let stabilityService = StabilityService()
+        var updatedRecipe = recipe
+        
+        stabilityService.generateImage(for: recipe) { result in
+            switch result {
+            case .success(let imageData):
+                print("✅ Successfully generated image for recipe")
+                NSLog("✅ FOODSNAP Successfully generated image for recipe")
+                
+                // Update recipe with the image data
+                updatedRecipe.imageData = imageData
+                completion(updatedRecipe)
+                
+            case .failure(let error):
+                print("⚠️ Failed to generate image: \(error.localizedDescription)")
+                NSLog("⚠️ FOODSNAP Failed to generate image: \(error.localizedDescription)")
+                
+                // Return the recipe without an image
+                completion(recipe)
+            }
+        }
     }
     
     // Create the recipe prompt

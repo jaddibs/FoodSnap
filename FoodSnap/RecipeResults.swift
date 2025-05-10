@@ -7,6 +7,37 @@
 
 import SwiftUI
 
+struct FoodImageView: View {
+    let imageData: Data?
+    
+    var body: some View {
+        if let imageData = imageData, let uiImage = UIImage(data: imageData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(height: 200)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
+        } else {
+            ZStack {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 200)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
+                
+                VStack(spacing: 12) {
+                    ProgressView("")
+                        .scaleEffect(1.2)
+                    Text("Generating food image...")
+                        .font(Theme.Typography.footnote)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+            }
+        }
+    }
+}
+
 struct RecipeCard: View {
     @Environment(\.colorScheme) var colorScheme
     let recipe: Recipe
@@ -15,25 +46,8 @@ struct RecipeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Recipe image
-            Group {
-                if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
-                } else {
-                    Image(systemName: "photo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 200)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray.opacity(0.2))
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Dimensions.cornerRadius, style: .continuous))
-                }
-            }
-            .padding(.bottom, 16)
+            FoodImageView(imageData: recipe.imageData)
+                .padding(.bottom, 16)
             
             // Recipe title
             Text(recipe.title)
@@ -89,6 +103,36 @@ struct RecipeCard: View {
     }
 }
 
+struct FullRecipeImageView: View {
+    let imageData: Data?
+    let height: CGFloat
+    
+    var body: some View {
+        if let imageData = imageData, let uiImage = UIImage(data: imageData) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(height: height)
+                .frame(maxWidth: .infinity)
+        } else {
+            ZStack {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: height)
+                    .frame(maxWidth: .infinity)
+                
+                VStack(spacing: 12) {
+                    ProgressView("")
+                        .scaleEffect(1.5)
+                    Text("Generating food image...")
+                        .font(Theme.Typography.callout)
+                        .foregroundColor(Theme.Colors.secondaryText)
+                }
+            }
+        }
+    }
+}
+
 struct RecipeFullView: View {
     @Environment(\.colorScheme) var colorScheme
     let recipe: Recipe
@@ -103,20 +147,7 @@ struct RecipeFullView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // Recipe image with dismiss button overlay
                     ZStack(alignment: .topTrailing) {
-                        Group {
-                            if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 250)
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 250)
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
+                        FullRecipeImageView(imageData: recipe.imageData, height: 250)
                         
                         Button(action: onDismiss) {
                             Image(systemName: "xmark.circle.fill")
