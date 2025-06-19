@@ -1,6 +1,6 @@
 # FoodSnap
 
-`FoodSnap` is an iOS application that instantly identifies ingredients from your food photos and recommends recipes tailored to your tastes, your preferences, and what's in your kitchen. FoodSnap aims to reduce food waste by suggesting recipes for ingredients you already have, promoting sustainable cooking practices.
+`FoodSnap` is an iOS application that instantly identifies ingredients from your food photos and recommends recipes tailored to your tastes, your preferences, and what's in your kitchen. `FoodSnap` aims to reduce food waste by suggesting recipes for ingredients you already have, promoting sustainable cooking practices.
 
 ## Features
 
